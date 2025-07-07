@@ -6,7 +6,7 @@ export interface DocumentFile {
     name: string
     avatar: string
   }
-  folderId: string
+  folderId: string | null // Allow null for root files
   content: {
     title: string
     author: string
@@ -27,6 +27,7 @@ export interface Folder {
 
 export const documentsData: {
   folders: Folder[]
+  rootFiles: DocumentFile[] // Add root files
   allFiles: DocumentFile[]
 } = {
   folders: [
@@ -227,8 +228,48 @@ Kegiatan engagement yang efektif harus dirancang dengan mempertimbangkan keberag
       files: [],
     },
   ],
+  rootFiles: [
+    {
+      id: "company-policy-2025",
+      name: "Company_Policy_2025.pdf",
+      date: "15 Jan 2025",
+      owner: { name: "HR Department", avatar: "HR" },
+      folderId: null,
+      content: {
+        title: "Company Policy 2025",
+        author: "HR Department",
+        lastUpdate: "15 Januari 2025",
+        pages: 12,
+        sections: [
+          {
+            title: "General Policies",
+            content: `This document outlines the general company policies for 2025, including work hours, dress code, and conduct guidelines.`,
+          },
+        ],
+      },
+    },
+    {
+      id: "annual-report-2024",
+      name: "Annual_Report_2024.pdf",
+      date: "31 Dec 2024",
+      owner: { name: "Finance Team", avatar: "FT" },
+      folderId: null,
+      content: {
+        title: "Annual Report 2024",
+        author: "Finance Team",
+        lastUpdate: "31 Desember 2024",
+        pages: 25,
+        sections: [
+          {
+            title: "Financial Summary",
+            content: `This annual report provides a comprehensive overview of the company's financial performance in 2024.`,
+          },
+        ],
+      },
+    },
+  ],
   allFiles: [],
 }
 
 // Flatten all files for the "All Files" section
-documentsData.allFiles = documentsData.folders.flatMap((folder) => folder.files)
+documentsData.allFiles = [...documentsData.folders.flatMap((folder) => folder.files), ...documentsData.rootFiles]

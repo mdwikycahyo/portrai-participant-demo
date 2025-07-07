@@ -109,12 +109,17 @@ export default function ComposePage() {
   const totalSelectedPages = Object.values(selectedDocuments).reduce((sum, pages) => sum + pages.length, 0)
   const totalAttachedPages = Object.values(attachedDocuments).reduce((sum, pages) => sum + pages.length, 0)
 
-  // Get file details for attached documents
+  // Get file details for attached documents (updated to handle root files)
   const getFileDetails = (fileId: string) => {
+    // Check in folders first
     for (const folder of documentsData.folders) {
       const file = folder.files.find((f) => f.id === fileId)
       if (file) return file
     }
+    // Check in root files
+    const rootFile = documentsData.rootFiles.find((f) => f.id === fileId)
+    if (rootFile) return rootFile
+
     return null
   }
 

@@ -74,6 +74,52 @@ export function ComposeDocumentSelection({
   const totalSelectedPages = Object.values(selectedDocuments).reduce((sum, pages) => sum + pages.length, 0)
   const hasSelection = totalSelectedPages > 0
 
+  // Component to render file item
+  const FileItem = ({ file }: { file: DocumentFile }) => {
+    const totalPages = file.content.pages || 0
+    const selectedPagesCount = selectedDocuments[file.id]?.length || 0
+    const isFileChecked = selectedPagesCount > 0
+
+    return (
+      <div className="p-3 bg-gray-50 rounded-lg">
+        <div className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="w-4 h-4 mt-1"
+            checked={isFileChecked}
+            onChange={(e) => handleFileCheckboxChange(file, e.target.checked)}
+          />
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-gray-900 truncate">{file.name}</h4>
+            <p className="text-xs text-gray-500">{file.date}</p>
+            <div className="mt-2">
+              {totalPages > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="w-full" asChild>
+                    <Button variant="outline" size="sm" className="bg-transparent">
+                      {selectedPagesCount}/{totalPages} Halaman Terpilih <ChevronDown className="w-3 h-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[--radix-dropdown-menu-trigger-width]">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                      <DropdownMenuCheckboxItem
+                        key={pageNumber}
+                        checked={selectedDocuments[file.id]?.includes(pageNumber) || false}
+                        onCheckedChange={(checked) => handlePageCheckboxChange(file, pageNumber, checked)}
+                      >
+                        Halaman {pageNumber}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className={`w-[320px] bg-white border-l border-gray-200 h-full transition-all duration-300 ease-in-out transform ${
@@ -114,8 +160,8 @@ export function ComposeDocumentSelection({
           </Button>
         </div>
 
-        {/* Integrated Folder/File Tree */}
         <div className="space-y-2">
+          {/* Folders Section */}
           {documentsData.folders.map((folder) => (
             <div key={folder.id}>
               {/* Folder Header */}
@@ -135,57 +181,22 @@ export function ComposeDocumentSelection({
               {/* Files under this folder (shown when expanded) */}
               {expandedFolders.includes(folder.id) && (
                 <div className="ml-6 mt-2 space-y-3">
-                  {folder.files.map((file) => {
-                    const totalPages = file.content.pages || 0
-                    const selectedPagesCount = selectedDocuments[file.id]?.length || 0
-                    const isFileChecked = selectedPagesCount > 0
-
-                    return (
-                      <div key={file.id} className="p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 mt-1"
-                            checked={isFileChecked}
-                            onChange={(e) => handleFileCheckboxChange(file, e.target.checked)}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-gray-900 truncate">{file.name}</h4>
-                            <p className="text-xs text-gray-500">{file.date}</p>
-                            <div className="mt-2">
-                              {totalPages > 0 && (
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger className="w-full" asChild>
-                                    <Button variant="outline" size="sm" className="bg-transparent">
-                                      {selectedPagesCount}/{totalPages} Halaman Terpilih{" "}
-                                      <ChevronDown className="w-3 h-3 ml-1" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-[--radix-dropdown-menu-trigger-width]">
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
-                                      <DropdownMenuCheckboxItem
-                                        key={pageNumber}
-                                        checked={selectedDocuments[file.id]?.includes(pageNumber) || false}
-                                        onCheckedChange={(checked) =>
-                                          handlePageCheckboxChange(file, pageNumber, checked)
-                                        }
-                                      >
-                                        Halaman {pageNumber}
-                                      </DropdownMenuCheckboxItem>
-                                    ))}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {folder.files.map((file) => (
+                    <FileItem key={file.id} file={file} />
+                  ))}
                 </div>
               )}
             </div>
           ))}
+
+        {/* Root Files Section */}
+          {documentsData.rootFiles.length > 0 && (
+            <div className="space-y-3 mb-4">
+              {documentsData.rootFiles.map((file) => (
+                <FileItem key={file.id} file={file} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

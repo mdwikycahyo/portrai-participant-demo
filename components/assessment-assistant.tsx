@@ -142,6 +142,11 @@ export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantPro
         </div>
       </div>
 
+      {/* Coming Soon Banner */}
+      <div className="p-3 bg-gray-700 text-gray-300 text-center text-xs font-medium border-b border-gray-600">
+        Fitur ini belum termasuk dalam August Deliverable (Coming Soon!)
+      </div>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-800">
         {messages.map((message) => (
