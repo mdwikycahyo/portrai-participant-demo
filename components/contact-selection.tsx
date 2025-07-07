@@ -3,6 +3,7 @@
 import { Search, ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useState } from "react"
 
 const contacts = {
   Superior: [
@@ -12,30 +13,48 @@ const contacts = {
     { name: "Tommy Nguyen", email: "Tommy.Nguyen@email.com", avatar: "TN" },
   ],
   Peer: [
-    { name: "Emily Carter", email: "Emily.Carter@yahoo.com", avatar: "EC" },
-    { name: "Sarah Patel", email: "Sarah.Patel@gmail.com", avatar: "SP" },
+    { name: "Jessica Wong", email: "Jessica.Wong@yahoo.com", avatar: "JW" },
+    { name: "David Kim", email: "David.Kim@gmail.com", avatar: "DK" },
   ],
-  Subordinate: [{ name: "Emily Carter", email: "Emily.Carter@yahoo.com", avatar: "EC" }],
+  Subordinate: [{ name: "Alex Rodriguez", email: "Alex.Rodriguez@yahoo.com", avatar: "AR" }],
 }
 
 interface ContactSelectionProps {
-  onClose: () => void
+  onClose: (contact: (typeof contacts.Superior)[0] | null) => void // Modified to pass selected contact or null
   isAnimating: boolean
 }
 
 export function ContactSelection({ onClose, isAnimating }: ContactSelectionProps) {
+  const [selectedContact, setSelectedContact] = useState<(typeof contacts.Superior)[0] | null>(null)
+
+  const handleRadioChange = (contact: (typeof contacts.Superior)[0]) => {
+    setSelectedContact(contact)
+  }
+
+  const handleStartChat = () => {
+    if (selectedContact) {
+      onClose(selectedContact) // Pass the selected contact
+    }
+  }
+
   return (
     <div
-      className={`flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out transform ${
+      className={`flex-1 flex flex-col bg-white transition-all duration-300 ease-in-out transform z-2 ${
         isAnimating ? "translate-x-0" : "translate-x-full"
       }`}
     >
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <Button variant="ghost" onClick={onClose} className="p-2">
+        <Button variant="ghost" onClick={() => onClose(null)} className="p-2">
           <ChevronRight className="w-4 h-4" />
         </Button>
-        <Button className="bg-gray-800 hover:bg-gray-700 text-white">tambah ke chat</Button>
+        <Button
+          onClick={handleStartChat}
+          disabled={!selectedContact}
+          className="bg-gray-800 hover:bg-gray-700 text-white"
+        >
+          Mulai Chat
+        </Button>
       </div>
 
       {/* Search */}
@@ -73,7 +92,13 @@ export function ContactSelection({ onClose, isAnimating }: ContactSelectionProps
                       <div className="text-sm text-gray-500">{"<contact_division>"}</div>
                       <div className="text-sm text-gray-600">{contact.email}</div>
                     </div>
-                    <input type="radio" name="contact" className="w-4 h-4" disabled />
+                    <input
+                      type="radio"
+                      name="contact"
+                      className="w-4 h-4"
+                      checked={selectedContact?.email === contact.email}
+                      onChange={() => handleRadioChange(contact)} // Enabled and added onChange handler
+                    />
                   </div>
                 ))}
               </div>

@@ -44,6 +44,7 @@ export const documentsData: {
             title: "Laporan Analisis Kinerja Karyawan 2023",
             author: "Surya Gama",
             lastUpdate: "2 April 2025",
+            pages: 7,
             sections: [
               {
                 title: "Ringkasan Eksekutif",
@@ -78,6 +79,7 @@ Setiap kriteria dinilai menggunakan skala 1-5, dengan bobot yang berbeda sesuai 
             title: "Laporan Kegiatan Inovasi Terbaru",
             author: "Budi Atmajaya",
             lastUpdate: "12 Maret 2025",
+            pages: 5,
             sections: [
               {
                 title: "Program Inovasi 2025",
@@ -199,6 +201,7 @@ Melanjutkan ke tahap perencanaan detail dan persiapan implementasi dengan target
             title: "Dokumen Referensi Kegiatan Engagement",
             author: "Budi Atmajaya",
             lastUpdate: "5 Juli 2025",
+            pages: 4,
             sections: [
               {
                 title: "Panduan Kegiatan Employee Engagement",

@@ -4,11 +4,23 @@ import { Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-interface ActiveChatProps {
-  chatId: string
+// Define the Chat interface (copied from app/chat/page.tsx for clarity)
+interface Chat {
+  id: string
+  name: string
+  avatar: string | null
+  lastMessage: string
+  time: string
+  isGroup: boolean
 }
 
-const chatData = {
+interface ActiveChatProps {
+  chatId: string
+  chats: Chat[] // Now receives chats as a prop
+}
+
+// Extended chat data for existing chats (messages)
+const detailedChatData = {
   "software-engineer": {
     name: "Software Engineer",
     avatar: "SE",
@@ -54,10 +66,27 @@ const chatData = {
   },
 }
 
-export function ActiveChat({ chatId }: ActiveChatProps) {
-  const chat = chatData[chatId as keyof typeof chatData]
+export function ActiveChat({ chatId, chats }: ActiveChatProps) {
+  // Find the chat from the provided chats array
+  const chat = chats.find((c) => c.id === chatId)
 
   if (!chat) return null
+
+  // Get detailed messages if available, otherwise provide a default for new chats
+  const currentChatDetails = detailedChatData[chatId as keyof typeof detailedChatData] || {
+    name: chat.name,
+    avatar: chat.avatar,
+    status: "Online", // Default status for new chats
+    messages: [
+      {
+        id: 0,
+        sender: chat.name,
+        content: "Mulai percakapan baru...",
+        time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+        isOwn: false,
+      },
+    ],
+  }
 
   return (
     <div className="flex-1 flex flex-col bg-white">
@@ -65,17 +94,17 @@ export function ActiveChat({ chatId }: ActiveChatProps) {
       <div className="p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600">
-            {chat.avatar || (
+            {currentChatDetails.avatar || (
               <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center">
                 <div className="w-3 h-3 bg-white rounded-full"></div>
               </div>
             )}
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">{chat.name}</h2>
+            <h2 className="font-semibold text-gray-900">{currentChatDetails.name}</h2>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">{chat.status}</span>
+              <span className="text-sm text-gray-600">{currentChatDetails.status}</span>
             </div>
           </div>
         </div>
@@ -87,11 +116,11 @@ export function ActiveChat({ chatId }: ActiveChatProps) {
           <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full">Senin, 11 Jan</span>
         </div>
 
-        {chat.messages.map((message) => (
+        {currentChatDetails.messages.map((message) => (
           <div key={message.id} className="mb-4">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
-                {chat.avatar}
+                {currentChatDetails.avatar}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">

@@ -20,7 +20,12 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  FileText,
 } from "lucide-react"
+import { documentsData } from "@/lib/documents-data"
+
+// Type for tracking selected documents and their pages
+export type SelectedDocumentsMap = Record<string, number[]> // fileId -> array of selected page numbers
 
 export default function ComposePage() {
   const router = useRouter()
@@ -29,15 +34,26 @@ export default function ComposePage() {
   const [isContactAnimating, setIsContactAnimating] = useState(false)
   const [isDocumentAnimating, setIsDocumentAnimating] = useState(false)
   const [selectedContact, setSelectedContact] = useState<string | null>(null)
-  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([])
+  const [selectedDocuments, setSelectedDocuments] = useState<SelectedDocumentsMap>({})
+  const [attachedDocuments, setAttachedDocuments] = useState<SelectedDocumentsMap>({})
   const [recipient, setRecipient] = useState("")
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
 
+  const handleOpenContactSelection = () => {
+    setShowContactSelection(true)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsContactAnimating(true)
+      })
+    })
+  }
+
   const handleContactSelect = (email: string) => {
     setSelectedContact(email)
     setRecipient(email)
-    setShowContactSelection(false)
+    setIsContactAnimating(false)
+    setTimeout(() => setShowContactSelection(false), 300)
   }
 
   const handleRemoveRecipient = () => {
@@ -45,8 +61,34 @@ export default function ComposePage() {
     setSelectedContact(null)
   }
 
-  const handleDocumentToggle = (docId: string) => {
-    setSelectedDocuments((prev) => (prev.includes(docId) ? prev.filter((id) => id !== docId) : [...prev, docId]))
+  const handleDocumentSelectionChange = (newSelection: SelectedDocumentsMap) => {
+    setSelectedDocuments(newSelection)
+  }
+
+  const handleOpenDocumentSelection = () => {
+    setShowDocumentSelection(true)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsDocumentAnimating(true)
+      })
+    })
+  }
+
+  const handleAttachDocuments = () => {
+    // Move selected documents to attached documents
+    setAttachedDocuments((prev) => ({ ...prev, ...selectedDocuments }))
+    // Clear selection and close panel
+    setSelectedDocuments({})
+    setIsDocumentAnimating(false)
+    setTimeout(() => setShowDocumentSelection(false), 300)
+  }
+
+  const handleRemoveAttachedDocument = (fileId: string) => {
+    setAttachedDocuments((prev) => {
+      const newAttached = { ...prev }
+      delete newAttached[fileId]
+      return newAttached
+    })
   }
 
   const handleBack = () => {
@@ -63,11 +105,24 @@ export default function ComposePage() {
     setTimeout(() => setShowDocumentSelection(false), 300)
   }
 
+  // Calculate total selected pages
+  const totalSelectedPages = Object.values(selectedDocuments).reduce((sum, pages) => sum + pages.length, 0)
+  const totalAttachedPages = Object.values(attachedDocuments).reduce((sum, pages) => sum + pages.length, 0)
+
+  // Get file details for attached documents
+  const getFileDetails = (fileId: string) => {
+    for (const folder of documentsData.folders) {
+      const file = folder.files.find((f) => f.id === fileId)
+      if (file) return file
+    }
+    return null
+  }
+
   return (
     <Layout>
       <div className="h-[calc(100vh-120px)] flex -mt-8 px-6 pb-6">
         {/* Main Compose Area */}
-        <div className="flex-1 bg-white rounded-lg border border-gray-200">
+        <div className="flex-1 bg-white rounded-lg border border-gray-200 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -76,13 +131,10 @@ export default function ComposePage() {
               </Button>
               <h1 className="text-xl font-semibold text-gray-900">Tulis</h1>
             </div>
-            {showDocumentSelection && (
-              <span className="text-sm text-gray-600">{selectedDocuments.length} dokumen terlampir</span>
-            )}
           </div>
 
-          {/* Form */}
-          <div className="p-4 space-y-4">
+          {/* Form Content (Scrollable) */}
+          <div className="p-4 space-y-4 flex-1 overflow-y-auto">
             {/* To Field */}
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium text-gray-700 w-12">Kepada:</label>
@@ -98,11 +150,8 @@ export default function ComposePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setIsContactAnimating(true)
-                    setShowContactSelection(!showContactSelection)
-                  }}
-                  className="ml-auto"
+                  onClick={handleOpenContactSelection}
+                  className="ml-auto bg-transparent"
                 >
                   Tambah Kontak
                 </Button>
@@ -154,6 +203,39 @@ export default function ComposePage() {
               </Button>
             </div>
 
+            {/* Attached Documents List (Moved here) */}
+            {Object.keys(attachedDocuments).length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-700">Dokumen Terlampir:</h4>
+                <div className="space-y-2">
+                  {Object.entries(attachedDocuments).map(([fileId, pages]) => {
+                    const file = getFileDetails(fileId)
+                    if (!file) return null
+
+                    return (
+                      <div key={fileId} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <FileText className="w-4 h-4 text-gray-600" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{file.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {pages.length} halaman terpilih dari {file.content.pages || 0}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveAttachedDocument(fileId)}
+                          className="p-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Message Area */}
             <Textarea
               value={message}
@@ -161,26 +243,20 @@ export default function ComposePage() {
               placeholder="Area Teks"
               className="min-h-[300px] resize-none"
             />
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsDocumentAnimating(true)
-                  setShowDocumentSelection(!showDocumentSelection)
-                }}
-              >
-                Lampirkan Dokumen
+          {/* Action Buttons (Fixed at bottom of card) */}
+          <div className="p-4 border-t border-gray-200 flex items-center justify-between">
+            <Button variant="outline" onClick={handleOpenDocumentSelection}>
+              Lampirkan Dokumen
+            </Button>
+            <div className="flex gap-3">
+              <Button variant="outline" disabled>
+                Simpan sebagai Draft
               </Button>
-              <div className="flex gap-3">
-                <Button variant="outline" disabled>
-                  Simpan sebagai Draft
-                </Button>
-                <Button className="bg-gray-800 hover:bg-gray-700 text-white" disabled>
-                  Kirim
-                </Button>
-              </div>
+              <Button className="bg-gray-800 hover:bg-gray-700 text-white" disabled>
+                Kirim
+              </Button>
             </div>
           </div>
         </div>
@@ -198,8 +274,9 @@ export default function ComposePage() {
         {showDocumentSelection && (
           <ComposeDocumentSelection
             selectedDocuments={selectedDocuments}
-            onDocumentToggle={handleDocumentToggle}
+            onSelectionChange={handleDocumentSelectionChange}
             onClose={handleCloseDocumentSelection}
+            onAttach={handleAttachDocuments}
             isAnimating={isDocumentAnimating}
           />
         )}

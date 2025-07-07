@@ -12,11 +12,11 @@ const emails = {
   inbox: [
     {
       id: "ux-researcher",
-      sender: "UX Researcher",
-      avatar: "UR",
+      sender: "Dwiky Cahyo",
+      avatar: "DC",
       subject: "Kick-off Discussion",
       preview:
-        "Nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehe...",
+        "Kita tengah memasuki fase penting dalam perjalanan Amboja sebagai perusahaan teknologi yang berbasis pada keber...",
       time: "2:00 PM",
       hasAttachment: true,
     },

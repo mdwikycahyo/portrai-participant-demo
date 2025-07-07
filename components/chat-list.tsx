@@ -2,39 +2,23 @@
 
 import { Users } from "lucide-react"
 
+// Define the Chat interface (copied from app/chat/page.tsx for clarity)
+interface Chat {
+  id: string
+  name: string
+  avatar: string | null
+  lastMessage: string
+  time: string
+  isGroup: boolean
+}
+
 interface ChatListProps {
+  chats: Chat[] // Now receives chats as a prop
   selectedChat: string | null
   onChatSelect: (chatId: string) => void
 }
 
-const chats = [
-  {
-    id: "software-engineer",
-    name: "Software Engineer",
-    avatar: "SE",
-    lastMessage: "Sed do eiusmod tempor incididunt",
-    time: "12:00 PM",
-    isGroup: false,
-  },
-  {
-    id: "product-designer",
-    name: "Product Designer",
-    avatar: "PD",
-    lastMessage: "Ut enim ad minim veniam",
-    time: "1:30 PM",
-    isGroup: false,
-  },
-  {
-    id: "earth-manufacturing",
-    name: "Earth Manufacturing",
-    avatar: null,
-    lastMessage: "Quis nostrud exercitation ullamco",
-    time: "2:45 PM",
-    isGroup: true,
-  },
-]
-
-export function ChatList({ selectedChat, onChatSelect }: ChatListProps) {
+export function ChatList({ chats, selectedChat, onChatSelect }: ChatListProps) {
   return (
     <div className="w-80 bg-white border-r border-gray-200 h-full">
       <div className="p-4 border-b border-gray-200">
@@ -53,8 +37,8 @@ export function ChatList({ selectedChat, onChatSelect }: ChatListProps) {
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600">
                 {chat.isGroup ? (
-                  <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center">
-                    <Users className="w-4 h-4 text-white" />
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center">
+                    <Users className="w-6 h-6 text-white" />
                   </div>
                 ) : (
                   chat.avatar

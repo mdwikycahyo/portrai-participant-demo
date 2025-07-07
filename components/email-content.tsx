@@ -27,7 +27,7 @@ interface EmailContentProps {
 
 const emailData = {
   "ux-researcher": {
-    sender: "UX Researcher",
+    sender: "Dwiky Cahyo",
     email: "ux.researcher@email.com",
     subject: "Kick-off Discussion",
     date: "April 15, 2025",
@@ -70,31 +70,33 @@ export function EmailContent({ emailId }: EmailContentProps) {
   if (!email) return null
 
   return (
-    <div className="flex-1 bg-white overflow-y-auto">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+    <div className="flex-1 bg-white overflow-y-auto border-l border-gray-200">
+      {" "}
+      {/* Changed background to gray-50 and added padding */}
+      {/* Header Card */}
+      <div className="p-4 border-b border-gray-200">
+        {" "}
+        {/* Added bg-white, rounded, shadow, and margin-bottom */}
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">Group Mailing List</h1>
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">Kick-off Discussion</h1>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
-                UR
+                DC
               </div>
               <div>
-                <p className="font-medium text-gray-900">M.Dwiky Wicak</p>
+                <p className="font-medium text-gray-900">Dwiky Cahyo</p>
                 <p className="text-sm text-gray-600">&lt;Dwiky.wick@email.com&gt;</p>
               </div>
             </div>
           </div>
           <span className="text-sm text-gray-500">{email.date}</span>
         </div>
-
         {/* Recipients */}
         <div className="text-sm text-gray-600">
           <span className="font-medium">Kepada:</span> {email.recipients.join(", ")}
         </div>
       </div>
-
       {/* Reply/Forward Interface */}
       {replyMode !== "none" && (
         <div className="border-t border-gray-200 pt-6 mb-6">
@@ -209,14 +211,14 @@ export function EmailContent({ emailId }: EmailContentProps) {
           </div>
         </div>
       )}
-
       {/* Content - Only show when not in reply/forward mode */}
       {replyMode === "none" && (
-        <div className="p-6">
+        <div className="p-4">
+          {" "}
+          {/* Added bg-white, rounded, shadow, and padding */}
           <div className="prose max-w-none">
             <div className="whitespace-pre-line text-gray-700 leading-relaxed mb-8">{email.content}</div>
           </div>
-
           {/* Attachments */}
           <div className="border-t border-gray-200 pt-6">
             <h3 className="font-medium text-gray-900 mb-4">Lampiran</h3>
@@ -241,7 +243,6 @@ export function EmailContent({ emailId }: EmailContentProps) {
               ))}
             </div>
           </div>
-
           {/* Action Buttons (when not in reply/forward mode) */}
           <div className="flex gap-3 mt-8">
             <Button onClick={() => setReplyMode("forward")} className="bg-gray-800 hover:bg-gray-700 text-white">
@@ -254,7 +255,6 @@ export function EmailContent({ emailId }: EmailContentProps) {
           </div>
         </div>
       )}
-
       {/* Original Email Content (when replying/forwarding) */}
       {replyMode !== "none" && (
         <div className="border-t border-gray-200 pt-6 mb-6">
