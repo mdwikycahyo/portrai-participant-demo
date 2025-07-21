@@ -6,7 +6,6 @@ import { Layout } from "@/components/layout"
 import { ComposeContactSelection } from "@/components/compose-contact-selection"
 import { ComposeDocumentSelection } from "@/components/compose-document-selection"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import {
   ChevronLeft,
@@ -23,6 +22,7 @@ import {
   FileText,
 } from "lucide-react"
 import { documentsData } from "@/lib/documents-data"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Type for tracking selected documents and their pages
 export type SelectedDocumentsMap = Record<string, number[]> // fileId -> array of selected page numbers
@@ -37,7 +37,7 @@ export default function ComposePage() {
   const [selectedDocuments, setSelectedDocuments] = useState<SelectedDocumentsMap>({})
   const [attachedDocuments, setAttachedDocuments] = useState<SelectedDocumentsMap>({})
   const [recipient, setRecipient] = useState("")
-  const [subject, setSubject] = useState("")
+  const [subject, setSubject] = useState<string | null>(null) // Changed to string | null for Select component
   const [message, setMessage] = useState("")
 
   const handleOpenContactSelection = () => {
@@ -123,6 +123,9 @@ export default function ComposePage() {
     return null
   }
 
+  // isSendButtonDisabled now checks if subject is selected
+  const isSendButtonDisabled = !recipient || !subject || !message
+
   return (
     <Layout>
       <div className="h-[calc(100vh-120px)] flex -mt-8 px-6 pb-6">
@@ -163,15 +166,18 @@ export default function ComposePage() {
               </div>
             </div>
 
-            {/* Subject */}
+            {/* Subject Selection (Replaced Input with Select) */}
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium text-gray-700 w-12">Subjek:</label>
-              <Input
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="Subjek"
-                className="flex-1"
-              />
+              <Select onValueChange={setSubject} value={subject || ""}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Pilih Subjek Email" className="text-gray-700" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Diskusi Pemanfaaatan Platform">Diskusi Pemanfaaatan Platform</SelectItem>
+                  <SelectItem value="Analisa Bisnis (SWOT)">Analisa Bisnis (SWOT)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Rich Text Toolbar */}
@@ -259,7 +265,7 @@ export default function ComposePage() {
               <Button variant="outline" disabled>
                 Simpan sebagai Draft
               </Button>
-              <Button className="bg-gray-800 hover:bg-gray-700 text-white" disabled>
+              <Button className="bg-gray-800 hover:bg-gray-700 text-white" disabled={isSendButtonDisabled}>
                 Kirim
               </Button>
             </div>

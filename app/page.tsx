@@ -1,23 +1,23 @@
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Eye } from "lucide-react";
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Eye } from "lucide-react"
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("DesignUniverse@outlook.co");
-  const [password, setPassword] = useState("");
+  const router = useRouter()
+  const [email, setEmail] = useState("DesignUniverse@outlook.co")
+  const [password, setPassword] = useState("")
 
   const handleSignIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.push("/home");
-  };
+    e.preventDefault()
+    router.push("/home")
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -46,18 +46,13 @@ export default function LoginPage() {
                 />
               </svg>
             </div>
-            <span className="text-2xl font-semibold text-gray-900">
-              Logoipsum
-            </span>
+            <span className="text-2xl font-semibold text-gray-900">Logoipsum</span>
           </div>
 
           {/* Login Form */}
           <form onSubmit={handleSignIn} className="space-y-6">
             <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium text-gray-700"
-              >
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                 Email
               </Label>
               <Input
@@ -70,10 +65,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-700"
-              >
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                 Password
               </Label>
               <div className="relative">
@@ -90,9 +82,7 @@ export default function LoginPage() {
             </div>
 
             <div className="text-right">
-              <span className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
-                Forgot Password?
-              </span>
+              <span className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">Forgot Password?</span>
             </div>
 
             <Button
@@ -106,18 +96,14 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="space-y-4 text-center">
             <div className="flex justify-center gap-6 text-sm text-gray-600">
-              <span className="cursor-pointer hover:text-gray-800">
-                Privacy
-              </span>
+              <span className="cursor-pointer hover:text-gray-800">Privacy</span>
               <span className="cursor-pointer hover:text-gray-800">Terms</span>
               <span className="cursor-pointer hover:text-gray-800">FAQ</span>
             </div>
-            <p className="text-xs text-gray-500">
-              © Daya Dimensi Indonesia. 2025. All rights reserved.
-            </p>
+            <p className="text-xs text-gray-500">© Daya Dimensi Indonesia. 2025. All rights reserved.</p>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
