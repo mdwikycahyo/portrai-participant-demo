@@ -16,33 +16,41 @@ interface Chat {
   lastMessage: string
   time: string
   isGroup: boolean
+  role?: string // Add role
+  simulationContext?: string | null // Add simulation context
 }
 
 // Initial hardcoded chats (moved from chat-list.tsx)
 const initialChats: Chat[] = [
   {
-    id: "software-engineer",
-    name: "Software Engineer",
-    avatar: "SE",
-    lastMessage: "Sed do eiusmod tempor incididunt",
-    time: "12:00 PM",
+    id: "ezra-kaell-s24",
+    name: "Ezra Kaell",
+    avatar: "EK",
+    lastMessage: "Poin yang sangat penting. Saya akan coba ajukan...",
+    time: "10:00 AM",
     isGroup: false,
+    role: "AVP of Earth Operation",
+    simulationContext: "Peluang Sponsorship S24",
   },
   {
-    id: "product-designer",
-    name: "Product Designer",
-    avatar: "PD",
-    lastMessage: "Ut enim ad minim veniam",
-    time: "1:30 PM",
+    id: "ezra-kaell-amboja",
+    name: "Ezra Kaell",
+    avatar: "EK",
+    lastMessage: "Baik, saya akan pastikan semua detail dikomunikasikan...",
+    time: "11:30 AM",
     isGroup: false,
+    role: "AVP of Earth Operation",
+    simulationContext: "Branding Amboja",
   },
   {
-    id: "earth-manufacturing",
-    name: "Earth Manufacturing",
-    avatar: null,
-    lastMessage: "Quis nostrud exercitation ullamco",
-    time: "2:45 PM",
-    isGroup: true,
+    id: "nero-atlas-project-x",
+    name: "Nero Atlas",
+    avatar: "NA",
+    lastMessage: "Mari kita diskusikan progres proyek.",
+    time: "09:00 AM",
+    isGroup: false,
+    role: "Production Manager of Food Processing ",
+    simulationContext: "Project X Implementation",
   },
 ]
 
@@ -67,7 +75,9 @@ export default function ChatPage() {
   }
 
   // This function now handles both closing and selecting a contact
-  const handleSelectAndCloseContactSelection = (contact: { name: string; email: string; avatar: string } | null) => {
+  const handleSelectAndCloseContactSelection = (
+    contact: { name: string; email: string; avatar: string; role?: string; simulationContext?: string | null } | null,
+  ) => {
     setIsContactAnimating(false)
     setTimeout(() => {
       setShowContactSelection(false)
@@ -86,6 +96,8 @@ export default function ChatPage() {
             lastMessage: "Mulai percakapan baru...",
             time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
             isGroup: false,
+            role: contact.role || "New Contact", // Default role for new contacts
+            simulationContext: contact.simulationContext || null,
           }
           setChats((prevChats) => [newChat, ...prevChats]) // Add to beginning of array
           setSelectedChat(newChatId)

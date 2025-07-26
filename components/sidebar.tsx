@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Folder, MessageCircle, Mail, Phone } from "lucide-react"
+import { Home, Folder, MessageCircle, Mail, Phone, MessagesSquare } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const navigation = [
   { name: "Beranda", href: "/home", icon: Home },
   { name: "Chat", href: "/chat", icon: MessageCircle },
+  { name: "Messenger", href: "/messenger", icon: MessagesSquare },
   { name: "Email", href: "/email", icon: Mail },
   { name: "Call", href: "/call", icon: Phone },
   { name: "Documents", href: "/documents", icon: Folder },
