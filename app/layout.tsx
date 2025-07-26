@@ -3,8 +3,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'PortrAI Participant Mockup',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  description: 'Created by FoW',
+  generator: 'PortrAI',
 }
 
 export default function RootLayout({
