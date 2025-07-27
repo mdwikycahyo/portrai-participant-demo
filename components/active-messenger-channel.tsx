@@ -11,10 +11,9 @@ import type { Channel } from "@/lib/messenger-data"
 
 interface ActiveMessengerChannelProps {
   channel: Channel
-  onNewConversation: () => void
 }
 
-export function ActiveMessengerChannel({ channel, onNewConversation }: ActiveMessengerChannelProps) {
+export function ActiveMessengerChannel({ channel }: ActiveMessengerChannelProps) {
   const [isParticipantsPanelOpen, setIsParticipantsPanelOpen] = useState(false)
   const [messageInput, setMessageInput] = useState("")
 
@@ -52,16 +51,6 @@ export function ActiveMessengerChannel({ channel, onNewConversation }: ActiveMes
                   {isParticipantsPanelOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                 </button>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onNewConversation}
-                className="bg-gray-800 hover:bg-gray-700 text-white"
-              >
-                Mulai Percakapan Baru
-              </Button>
             </div>
           </div>
         </div>

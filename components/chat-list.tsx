@@ -2,6 +2,7 @@
 
 import { Users } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
+import { Button } from "@/components/ui/button"
 
 // Define the Chat interface (copied from app/chat/page.tsx for clarity)
 interface Chat {
@@ -19,14 +20,18 @@ interface ChatListProps {
   chats: Chat[] // Now receives chats as a prop
   selectedChat: string | null
   onChatSelect: (chatId: string) => void
+  onAddNewChat: () => void
 }
 
-export function ChatList({ chats, selectedChat, onChatSelect }: ChatListProps) {
+export function ChatList({ chats, selectedChat, onChatSelect, onAddNewChat }: ChatListProps) {
   return (
     <TooltipProvider>
       <div className="w-80 bg-white border-r border-gray-200 h-full">
         <div className="p-4 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900">Chat</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Chat</h1>
+          <Button onClick={onAddNewChat} className="w-full bg-gray-800 hover:bg-gray-700 text-white">
+            Tambah Chat Baru
+          </Button>
         </div>
 
         <div className="overflow-y-auto">

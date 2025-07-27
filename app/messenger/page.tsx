@@ -13,7 +13,7 @@ interface ContactWithContext {
   email: string
   avatar: string
   role: string
-  simulationContext: string
+  simulationContext?: string | null // Changed to be optional and nullable
 }
 
 export default function MessengerPage() {
@@ -52,9 +52,10 @@ export default function MessengerPage() {
   const handleSelectAndCloseContactSelection = (selectedContactWithContext: ContactWithContext | null) => {
     if (selectedContactWithContext) {
       const { simulationContext, ...selectedContact } = selectedContactWithContext
+      const contextToUse = simulationContext ?? "New Conversation" // Provide a default string
 
       // Generate unique channel name based on context
-      const uniqueChannelName = generateUniqueChannelName(simulationContext)
+      const uniqueChannelName = generateUniqueChannelName(contextToUse)
 
       // Create new channel
       const newChannel: Channel = {
@@ -74,7 +75,7 @@ export default function MessengerPage() {
             id: `msg_${Date.now()}`,
             senderName: "You",
             senderAvatar: "Y",
-            content: `Mulai percakapan baru untuk konteks: ${simulationContext}`,
+            content: `Mulai percakapan baru untuk konteks: ${contextToUse}`,
             timestamp: new Date().toLocaleTimeString("en-US", {
               hour: "2-digit",
               minute: "2-digit",
@@ -111,6 +112,7 @@ export default function MessengerPage() {
           channels={channels}
           selectedChannelId={selectedChannelId}
           onChannelSelect={handleChannelSelect}
+          onAddNewChannel={handleAddNewChannel}
         />
 
         <div className="flex-1 flex flex-col">
@@ -118,9 +120,9 @@ export default function MessengerPage() {
             <ContactSelection onClose={handleSelectAndCloseContactSelection} isAnimating={isContactAnimating} />
           )}
           {!showContactSelection && selectedChannel ? (
-            <ActiveMessengerChannel channel={selectedChannel} onNewConversation={handleAddNewChannel} />
+            <ActiveMessengerChannel channel={selectedChannel} />
           ) : (
-            !showContactSelection && <MessengerEmptyState onNewConversation={handleAddNewChannel} />
+            !showContactSelection && <MessengerEmptyState />
           )}
         </div>
       </div>

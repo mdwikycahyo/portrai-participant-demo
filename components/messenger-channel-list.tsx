@@ -1,20 +1,30 @@
 "use client"
 
 import { Hash } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import type { Channel } from "@/lib/messenger-data"
 
 interface MessengerChannelListProps {
   channels: Channel[]
   selectedChannelId: string | null
   onChannelSelect: (channelId: string) => void
+  onAddNewChannel: () => void
 }
 
-export function MessengerChannelList({ channels, selectedChannelId, onChannelSelect }: MessengerChannelListProps) {
+export function MessengerChannelList({
+  channels,
+  selectedChannelId,
+  onChannelSelect,
+  onAddNewChannel,
+}: MessengerChannelListProps) {
   return (
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
-        <h1 className="text-xl font-semibold text-gray-900">Messenger</h1>
+        <h1 className="text-xl font-semibold text-gray-900 mb-4">Messenger</h1>
+        <Button onClick={onAddNewChannel} className="w-full bg-gray-800 hover:bg-gray-700 text-white">
+          Mulai Percakapan Baru
+        </Button>
       </div>
 
       {/* Channel List */}

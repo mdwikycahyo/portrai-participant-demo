@@ -6,7 +6,6 @@ import { ChatList } from "@/components/chat-list"
 import { ChatEmptyState } from "@/components/chat-empty-state"
 import { ActiveChat } from "@/components/active-chat"
 import { ContactSelection } from "@/components/contact-selection"
-import { Button } from "@/components/ui/button"
 
 // Define the Chat interface to match existing chat data structure
 interface Chat {
@@ -109,14 +108,12 @@ export default function ChatPage() {
   return (
     <Layout>
       <div className="h-[calc(100vh-120px)] flex relative -mt-8 px-6 pb-6">
-        {/* Add New Chat Button */}
-        <div className="absolute top-4 right-12 z-1">
-          <Button onClick={handleAddNewChat} className="bg-gray-800 hover:bg-gray-700 text-white">
-            Tambah Chat Baru
-          </Button>
-        </div>
-
-        <ChatList chats={chats} selectedChat={selectedChat} onChatSelect={handleChatSelect} />
+        <ChatList
+          chats={chats}
+          selectedChat={selectedChat}
+          onChatSelect={handleChatSelect}
+          onAddNewChat={handleAddNewChat}
+        />
 
         <div className="flex-1 flex flex-col">
           {/* Main Content */}
