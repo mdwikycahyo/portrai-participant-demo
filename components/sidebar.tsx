@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const navigation = [
   { name: "Beranda", href: "/home", icon: Home },
-  { name: "Chat", href: "/chat", icon: MessageCircle },
+  // { name: "Chat", href: "/chat", icon: MessageCircle },
   { name: "Messenger", href: "/messenger", icon: MessagesSquare },
   { name: "Email", href: "/email", icon: Mail },
   { name: "Call", href: "/call", icon: Phone },
