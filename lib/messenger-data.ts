@@ -62,43 +62,6 @@ export const messengerChannelsData: Channel[] = [
   },
   {
     id: "2",
-    name: "Project X Implementation",
-    participants: [
-      {
-        name: "You",
-        avatar: "Y",
-        role: "Manager",
-        email: "you@company.com",
-      },
-      {
-        name: "Nero Atlas",
-        avatar: "NA",
-        role: "Technical Lead",
-        email: "nero.atlas@company.com",
-      },
-    ],
-    messages: [
-      {
-        id: "1",
-        senderName: "Nero Atlas",
-        senderAvatar: "NA",
-        content: "Implementation phase 1 completed. Ready untuk testing.",
-        timestamp: "09:00 AM",
-        isUser: false,
-      },
-      {
-        id: "2",
-        senderName: "You",
-        senderAvatar: "Y",
-        content: "Excellent work! Let's proceed dengan phase 2.",
-        timestamp: "09:03 AM",
-        isUser: true,
-      },
-    ],
-    lastActivity: "09:05 AM",
-  },
-  {
-    id: "3",
     name: "Peluang Sponsorship S24",
     participants: [
       {
@@ -147,5 +110,42 @@ export const messengerChannelsData: Channel[] = [
       },
     ],
     lastActivity: "10:45 AM",
+  },
+  {
+    id: "3",
+    name: "Project X Implementation",
+    participants: [
+      {
+        name: "You",
+        avatar: "Y",
+        role: "Manager",
+        email: "you@company.com",
+      },
+      {
+        name: "Nero Atlas",
+        avatar: "NA",
+        role: "Technical Lead",
+        email: "nero.atlas@company.com",
+      },
+    ],
+    messages: [
+      {
+        id: "1",
+        senderName: "Nero Atlas",
+        senderAvatar: "NA",
+        content: "Implementation phase 1 completed. Ready untuk testing.",
+        timestamp: "09:00 AM",
+        isUser: false,
+      },
+      {
+        id: "2",
+        senderName: "You",
+        senderAvatar: "Y",
+        content: "Excellent work! Let's proceed dengan phase 2.",
+        timestamp: "09:03 AM",
+        isUser: true,
+      },
+    ],
+    lastActivity: "09:05 AM",
   },
 ]

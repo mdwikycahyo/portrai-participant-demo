@@ -9,11 +9,19 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import type { Channel } from "@/lib/messenger-data"
 
-interface ActiveMessengerChannelProps {
-  channel: Channel
+type Participant = {
+  name: string
+  avatar: string
+  role: string
+  email: string
 }
 
-export function ActiveMessengerChannel({ channel }: ActiveMessengerChannelProps) {
+interface ActiveMessengerChannelProps {
+  channel: Channel
+  selectedParticipant: Participant | null
+}
+
+export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveMessengerChannelProps) {
   const [isParticipantsPanelOpen, setIsParticipantsPanelOpen] = useState(false)
   const [messageInput, setMessageInput] = useState("")
 
@@ -30,6 +38,26 @@ export function ActiveMessengerChannel({ channel }: ActiveMessengerChannelProps)
     }
   }
 
+  // Determine header content based on selectedParticipant
+  const headerContent = selectedParticipant
+    ? {
+        title: selectedParticipant.name,
+        subtitle: selectedParticipant.role,
+        context: `Konteks: ${channel.name}`,
+        avatar: selectedParticipant.avatar,
+      }
+    : {
+        title: channel.name,
+        subtitle: "Channel Chat",
+        context: null,
+        avatar: "#",
+      }
+
+  // Determine input placeholder
+  const inputPlaceholder = selectedParticipant
+    ? `Ketik pesan Anda ke ${selectedParticipant.name}...`
+    : "Ketik pesan Anda di sini..."
+
   return (
     <div className="flex-1 flex h-full">
       {/* Main Chat Area */}
@@ -38,18 +66,12 @@ export function ActiveMessengerChannel({ channel }: ActiveMessengerChannelProps)
         <div className="p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gray-600 flex items-center justify-center text-white font-semibold text-sm">
-                #
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
+                {headerContent.avatar}
               </div>
               <div>
-                <h2 className="font-semibold text-gray-900">{channel.name}</h2>
-                <button
-                  onClick={() => setIsParticipantsPanelOpen(!isParticipantsPanelOpen)}
-                  className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  <span>{channel.participants.length} participants</span>
-                  {isParticipantsPanelOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                </button>
+                <h2 className="font-semibold text-gray-900">{headerContent.title}</h2>
+                <p className="text-sm text-gray-600">{headerContent.subtitle}</p>
               </div>
             </div>
           </div>
@@ -57,34 +79,56 @@ export function ActiveMessengerChannel({ channel }: ActiveMessengerChannelProps)
 
         {/* Messages */}
         <div className="flex-1 p-4 bg-gray-50 overflow-y-auto">
-          <div className="text-center mb-4">
-            <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full">Today</span>
-          </div>
-
-          {channel.messages.map((message) => (
-            <div key={message.id} className="mb-4">
-              <div className={`flex items-start gap-3 ${message.isUser ? "flex-row-reverse" : ""}`}>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
-                  {message.senderAvatar}
+          {channel.messages.length === 0 ? (
+            /* Empty Chat State */
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
                 </div>
-                <div className="flex-1">
-                  <div className={`flex items-center gap-2 mb-1 ${message.isUser ? "justify-end" : ""}`}>
-                    <span className="text-sm font-medium text-gray-900">~{message.senderName}</span>
-                  </div>
-                  <div
-                    className={`p-3 rounded-lg shadow-sm max-w-md ${
-                      message.isUser ? "bg-blue-500 text-white ml-auto" : "bg-white text-gray-700"
-                    }`}
-                  >
-                    <p>{message.content}</p>
-                  </div>
-                  <span className={`text-xs text-gray-500 mt-1 block ${message.isUser ? "text-right" : ""}`}>
-                    {message.timestamp}
-                  </span>
-                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h3>
+                <p className="text-gray-500">Start the conversation!</p>
               </div>
             </div>
-          ))}
+          ) : (
+            <>
+              <div className="text-center mb-4">
+                <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full">Senin, 11 Jan</span>
+              </div>
+
+              {channel.messages.map((message) => (
+                <div key={message.id} className="mb-4">
+                  <div className={`flex items-start gap-3 ${message.isUser ? "flex-row-reverse" : ""}`}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
+                      {message.senderAvatar}
+                    </div>
+                    <div className="flex-1">
+                      <div className={`flex items-center gap-2 mb-1 ${message.isUser ? "justify-end" : ""}`}>
+                        <span className="text-sm font-medium text-gray-900">~{message.senderName}</span>
+                      </div>
+                      <div
+                        className={`p-3 rounded-lg shadow-sm max-w-md ${
+                          message.isUser ? "bg-blue-500 text-white ml-auto" : "bg-white text-gray-700"
+                        }`}
+                      >
+                        <p>{message.content}</p>
+                      </div>
+                      <span className={`text-xs text-gray-500 mt-1 block ${message.isUser ? "text-right" : ""}`}>
+                        {message.timestamp}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
         {/* Input */}
@@ -94,7 +138,7 @@ export function ActiveMessengerChannel({ channel }: ActiveMessengerChannelProps)
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={`Message #${channel.name}`}
+              placeholder={inputPlaceholder}
               className="flex-1"
             />
             <Button onClick={handleSendMessage} size="icon">
