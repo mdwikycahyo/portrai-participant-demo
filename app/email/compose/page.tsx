@@ -7,6 +7,8 @@ import { ComposeContactSelection } from "@/components/compose-contact-selection"
 import { ComposeDocumentSelection } from "@/components/compose-document-selection"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   ChevronLeft,
   X,
@@ -22,10 +24,34 @@ import {
   FileText,
 } from "lucide-react"
 import { documentsData } from "@/lib/documents-data"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 // Type for tracking selected documents and their pages
 export type SelectedDocumentsMap = Record<string, number[]> // fileId -> array of selected page numbers
+
+// Define a single default color for unselected tags
+const DEFAULT_TAG_COLOR = "bg-gray-100 text-gray-800 border-gray-200"
+
+// Flattened and enhanced tag data
+const allAvailableTags = [
+  { text: "Platform", selectedColor: "bg-blue-600 text-white border-blue-600" },
+  { text: "Optimalisasi", selectedColor: "bg-blue-600 text-white border-blue-600" },
+  { text: "Bisnis", selectedColor: "bg-green-600 text-white border-green-600" },
+  { text: "SWOT", selectedColor: "bg-green-600 text-white border-green-600" },
+]
+
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T extends unknown[]>(array: T): T => {
+  const shuffled = [...array] as T
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+// Shuffle tags once when the component is defined
+const shuffledTags = shuffleArray(allAvailableTags)
 
 export default function ComposePage() {
   const router = useRouter()
@@ -37,8 +63,9 @@ export default function ComposePage() {
   const [selectedDocuments, setSelectedDocuments] = useState<SelectedDocumentsMap>({})
   const [attachedDocuments, setAttachedDocuments] = useState<SelectedDocumentsMap>({})
   const [recipient, setRecipient] = useState("")
-  const [subject, setSubject] = useState<string | null>(null) // Changed to string | null for Select component
+  const [subject, setSubject] = useState<string>("")
   const [message, setMessage] = useState("")
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
 
   const handleOpenContactSelection = () => {
     setShowContactSelection(true)
@@ -91,6 +118,18 @@ export default function ComposePage() {
     })
   }
 
+  const handleTagClick = (tagText: string) => {
+    setSelectedTags((prev) => {
+      if (prev.includes(tagText)) {
+        // Remove tag if already selected
+        return prev.filter((tag) => tag !== tagText)
+      } else {
+        // Add tag if not selected
+        return [...prev, tagText]
+      }
+    })
+  }
+
   const handleBack = () => {
     router.push("/email")
   }
@@ -124,7 +163,7 @@ export default function ComposePage() {
   }
 
   // isSendButtonDisabled now checks if subject is selected
-  const isSendButtonDisabled = !recipient || !subject || !message
+  const isSendButtonDisabled = !recipient || subject.trim() === "" || !message
 
   return (
     <Layout>
@@ -166,18 +205,41 @@ export default function ComposePage() {
               </div>
             </div>
 
-            {/* Subject Selection (Replaced Input with Select) */}
+            {/* Subject Field */}
             <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-gray-700 w-12">Subjek:</label>
-              <Select onValueChange={setSubject} value={subject || ""}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Pilih Subjek Email" className="text-gray-700" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Diskusi Pemanfaaatan Platform">Diskusi Pemanfaaatan Platform</SelectItem>
-                  <SelectItem value="Analisa Bisnis (SWOT)">Analisa Bisnis (SWOT)</SelectItem>
-                </SelectContent>
-              </Select>
+              <label htmlFor="subject" className="text-sm font-medium text-gray-700 w-12">
+                Subjek:
+              </label>
+              <Input
+                id="subject"
+                placeholder="Ketik Subjek Email"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+
+            {/* Tags Section */}
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-gray-700">Tags:</label>
+              <div className="flex flex-wrap gap-2">
+                {shuffledTags.map((tag) => {
+                  const isSelected = selectedTags.includes(tag.text)
+                  return (
+                    <Badge
+                      key={tag.text}
+                      variant="outline"
+                      className={cn(
+                        "cursor-pointer transition-colors hover:opacity-80",
+                        isSelected ? tag.selectedColor : DEFAULT_TAG_COLOR,
+                      )}
+                      onClick={() => handleTagClick(tag.text)}
+                    >
+                      {tag.text}
+                    </Badge>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Rich Text Toolbar */}
