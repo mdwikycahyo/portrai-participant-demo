@@ -176,7 +176,7 @@ export function ContactSelection({ onClose, isAnimating }: ContactSelectionProps
                       {/* Expanded Context Selection */}
                       {isExpanded && (
                         <div className="border-t border-gray-200 p-3 bg-gray-50">
-                          <h5 className="text-sm font-medium text-gray-900 mb-3">Pilih Konteks Percakapan:</h5>
+                          <h5 className="text-sm font-medium text-gray-900 mb-3">Pilih Konteks Simulasi:</h5>
                           <div className="space-y-2">
                             {contact.availableContexts.map((context, contextIndex) => (
                               <div

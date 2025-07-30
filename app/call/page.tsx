@@ -159,7 +159,7 @@ export default function CallPage() {
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-120px)] flex -mt-8 px-6 pb-6">
+      <div className="h-[calc(100vh-120px)] flex px-6 pb-6">
         <div className="flex-1 flex flex-col">
           {/* Header */}
           <div className="p-6 border-b bg-white">
