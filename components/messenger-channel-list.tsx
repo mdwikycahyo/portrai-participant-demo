@@ -21,7 +21,7 @@ export function MessengerChannelList({
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-4">Chat</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-4">Messenger</h1>
         <Button onClick={onAddNewChannel} className="w-full bg-gray-800 hover:bg-gray-700 text-white">
           Mulai Percakapan Baru
         </Button>

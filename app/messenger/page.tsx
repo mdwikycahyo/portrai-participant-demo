@@ -130,7 +130,7 @@ export default function MessengerPage() {
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-120px)] flex -mt-8 px-6 pb-6">
+      <div className="h-[calc(100vh-120px)] flex px-6 pb-6">
         {/* Left Panel: Channel List */}
         <MessengerChannelList
           channels={channels}

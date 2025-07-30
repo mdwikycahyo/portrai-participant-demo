@@ -107,7 +107,7 @@ export default function ChatPage() {
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-120px)] flex relative -mt-8 px-6 pb-6">
+      <div className="h-[calc(100vh-120px)] flex relative px-6 pb-6">
         <ChatList
           chats={chats}
           selectedChat={selectedChat}

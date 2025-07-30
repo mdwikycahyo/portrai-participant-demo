@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
-import { Bot, X, Send } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Bot, X, Send, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -11,6 +11,7 @@ interface Message {
   id: string
   text: string
   isBot: boolean
+  type: "user" | "bot" | "reminder"
   timestamp: string
 }
 
@@ -19,6 +20,7 @@ const initialMessages: Message[] = [
     id: "1",
     text: "Ada yang bisa saya bantu?",
     isBot: true,
+    type: "bot",
     timestamp: new Date().toLocaleTimeString("id-ID", {
       hour: "2-digit",
       minute: "2-digit",
@@ -42,9 +44,18 @@ const botResponses = {
 interface AssessmentAssistantProps {
   isOpen: boolean
   onToggle: () => void
+  externalMessage?: { text: string; type: "reminder" } | null
+  onNewMessageReceived?: () => void
+  onChatOpened?: () => void
 }
 
-export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantProps) {
+export function AssessmentAssistant({
+  isOpen,
+  onToggle,
+  externalMessage,
+  onNewMessageReceived,
+  onChatOpened,
+}: AssessmentAssistantProps) {
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("assessment-assistant-messages")
@@ -53,6 +64,37 @@ export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantPro
     return initialMessages
   })
   const [inputValue, setInputValue] = useState("")
+  
+  // Create a ref for the messages container
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+
+  // Function to scroll to bottom smoothly
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ 
+      behavior: "smooth",
+      block: "end"
+    })
+  }
+
+  // Scroll to bottom when component opens
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to ensure the component is fully rendered
+      const timer = setTimeout(() => {
+        scrollToBottom()
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen])
+
+  // Scroll to bottom when new messages are added
+  useEffect(() => {
+    if (isOpen && messages.length > 0) {
+      scrollToBottom()
+    }
+  }, [messages, isOpen])
 
   // Persist messages to localStorage
   useEffect(() => {
@@ -60,6 +102,34 @@ export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantPro
       localStorage.setItem("assessment-assistant-messages", JSON.stringify(messages))
     }
   }, [messages])
+
+  // Handle external messages (from Layout, e.g., banner triggers)
+  useEffect(() => {
+    if (externalMessage && externalMessage.text) {
+      const reminderMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        text: externalMessage.text,
+        isBot: true,
+        type: externalMessage.type,
+        timestamp: new Date().toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+      }
+      setMessages((prev) => [...prev, reminderMessage])
+      if (onNewMessageReceived) {
+        onNewMessageReceived()
+      }
+    }
+  }, [externalMessage, onNewMessageReceived])
+
+  // Notify parent when chat is opened
+  useEffect(() => {
+    if (isOpen && onChatOpened) {
+      onChatOpened()
+    }
+  }, [isOpen, onChatOpened])
 
   const getBotResponse = (userMessage: string): string => {
     const message = userMessage.toLowerCase()
@@ -88,6 +158,7 @@ export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantPro
       id: Date.now().toString(),
       text: inputValue,
       isBot: false,
+      type: "user",
       timestamp: new Date().toLocaleTimeString("id-ID", {
         hour: "2-digit",
         minute: "2-digit",
@@ -104,6 +175,7 @@ export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantPro
         id: (Date.now() + 1).toString(),
         text: getBotResponse(inputValue),
         isBot: true,
+        type: "bot",
         timestamp: new Date().toLocaleTimeString("id-ID", {
           hour: "2-digit",
           minute: "2-digit",
@@ -111,6 +183,9 @@ export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantPro
         }),
       }
       setMessages((prev) => [...prev, botMessage])
+      if (onNewMessageReceived) {
+        onNewMessageReceived()
+      }
     }, 1000)
   }
 
@@ -148,19 +223,32 @@ export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantPro
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-800">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-800"
+      >
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.isBot ? "justify-start" : "justify-end"}`}>
             <div className="max-w-[80%]">
               {message.isBot && (
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-gray-300" />
+                    {message.type === "reminder" ? (
+                      <Bell className="w-4 h-4 text-yellow-300" />
+                    ) : (
+                      <Bot className="w-4 h-4 text-gray-300" />
+                    )}
                   </div>
                 </div>
               )}
               <div
-                className={`p-3 rounded-lg ${message.isBot ? "bg-gray-700 text-gray-100" : "bg-blue-500 text-white"}`}
+                className={`p-3 rounded-lg ${
+                  message.type === "user"
+                    ? "bg-blue-500 text-white"
+                    : message.type === "reminder"
+                      ? "bg-indigo-800 text-white"
+                      : "bg-gray-700 text-gray-100"
+                }`}
               >
                 <p className="text-sm">{message.text}</p>
               </div>
@@ -168,6 +256,8 @@ export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantPro
             </div>
           </div>
         ))}
+        {/* Invisible element to scroll to */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
@@ -189,16 +279,22 @@ export function AssessmentAssistant({ isOpen, onToggle }: AssessmentAssistantPro
   )
 }
 
-export function AssessmentAssistantButton({ onClick }: { onClick: () => void }) {
+interface AssessmentAssistantButtonProps {
+  onClick: () => void
+  hasNewMessage?: boolean
+}
+
+export function AssessmentAssistantButton({ onClick, hasNewMessage = false }: AssessmentAssistantButtonProps) {
   return (
     <Button
       onClick={onClick}
       variant="ghost"
       size="sm"
-      className="flex items-center gap-2 hover:bg-gray-100 p-2 rounded-lg text-gray-700 hover:text-gray-900"
+      className="relative flex items-center gap-2 hover:bg-gray-100 p-2 rounded-lg text-gray-700 hover:text-gray-900"
     >
       <Bot className="w-5 h-5 text-blue-600" />
       <span className="text-sm font-medium">AI Assistant</span>
+      {hasNewMessage && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
     </Button>
   )
 }
