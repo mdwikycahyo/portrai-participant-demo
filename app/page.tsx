@@ -16,7 +16,7 @@ export default function LoginPage() {
 
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault()
-    router.push("/check-in") // Updated redirect path
+    router.push("/home") // Updated redirect path
   }
 
   return (

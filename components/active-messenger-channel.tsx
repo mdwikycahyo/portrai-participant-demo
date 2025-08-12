@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Send, ChevronDown, ChevronRight, X } from "lucide-react"
+import { Send, X, Phone } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -24,6 +25,8 @@ interface ActiveMessengerChannelProps {
 export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveMessengerChannelProps) {
   const [isParticipantsPanelOpen, setIsParticipantsPanelOpen] = useState(false)
   const [messageInput, setMessageInput] = useState("")
+  const [messages, setMessages] = useState(channel.messages)
+  const router = useRouter()
 
   const handleSendMessage = () => {
     if (messageInput.trim()) {
@@ -35,6 +38,31 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSendMessage()
+    }
+  }
+
+  const handleCallClick = () => {
+    // Check if it's Ezra Kaell from "Peluang Sponsorship S24" channel
+    if (selectedParticipant?.name === "Ezra Kaell" && channel.name === "Peluang Sponsorship S24") {
+      router.push("/call/active/1")
+    } else {
+      // Add a message from the contact saying they're not available for calls
+      const currentTime = new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+
+      const unavailableMessage = {
+        id: `msg-${Date.now()}`,
+        senderName: selectedParticipant?.name || "Contact",
+        senderAvatar: selectedParticipant?.avatar || "C",
+        content: "Maaf, saya sedang tidak tersedia untuk panggilan saat ini. Bisa kita lanjutkan via chat?",
+        timestamp: currentTime,
+        isUser: false,
+      }
+
+      setMessages((prev) => [...prev, unavailableMessage])
     }
   }
 
@@ -74,12 +102,17 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
                 <p className="text-sm text-gray-600">{headerContent.subtitle}</p>
               </div>
             </div>
+            {selectedParticipant && (
+              <Button variant="ghost" size="icon" onClick={handleCallClick}>
+                <Phone className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Messages */}
         <div className="flex-1 p-4 bg-gray-50 overflow-y-auto">
-          {channel.messages.length === 0 ? (
+          {messages.length === 0 ? (
             /* Empty Chat State */
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
@@ -103,7 +136,7 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
                 <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full">Senin, 11 Jan</span>
               </div>
 
-              {channel.messages.map((message) => (
+              {messages.map((message) => (
                 <div key={message.id} className="mb-4">
                   <div className={`flex items-start gap-3 ${message.isUser ? "flex-row-reverse" : ""}`}>
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">

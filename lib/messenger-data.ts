@@ -76,12 +76,6 @@ export const messengerChannelsData: Channel[] = [
         role: "Assistant Vice President",
         email: "ezra.kaell@company.com",
       },
-      {
-        name: "Sarah Patel",
-        avatar: "SP",
-        role: "General Manager",
-        email: "sarah.patel@company.com",
-      },
     ],
     messages: [
       {
@@ -96,17 +90,18 @@ export const messengerChannelsData: Channel[] = [
         id: "2",
         senderName: "Ezra Kaell",
         senderAvatar: "EK",
-        content: "Sudah ada beberapa lead yang menjanjikan. Saya akan share update lengkapnya di meeting nanti.",
+        content:
+          "Maaf, saya sedang sangat sibuk hari ini dengan beberapa urgent meetings. Bisa kita discuss proposal sponsorship ini via call saja?",
         timestamp: "10:32 AM",
         isUser: false,
       },
       {
         id: "3",
-        senderName: "Sarah Patel",
-        senderAvatar: "SP",
-        content: "Perfect! Saya sudah prepare budget allocation untuk Q1.",
+        senderName: "You",
+        senderAvatar: "Y",
+        content: "Saya akan call sekarang.",
         timestamp: "10:35 AM",
-        isUser: false,
+        isUser: true,
       },
     ],
     lastActivity: "10:45 AM",

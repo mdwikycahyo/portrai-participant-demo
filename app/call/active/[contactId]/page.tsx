@@ -7,11 +7,21 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Layout } from "@/components/layout"
 
-// Mock contact data (same as in call page)
+// Mock contact data with Ezra Kaell as contactId "1"
 const contactData = {
   superior: [
     {
       id: "1",
+      name: "Ezra Kaell",
+      level: "Assistant Vice President",
+      division: "Strategic Planning",
+      email: "Ezra.Kaell@company.com",
+      status: "online",
+      initials: "EK",
+      bgColor: "bg-purple-500",
+    },
+    {
+      id: "2",
       name: "Emily Carter",
       level: "Assistant Vice President",
       division: "Human Resources",
@@ -21,7 +31,7 @@ const contactData = {
       bgColor: "bg-purple-500",
     },
     {
-      id: "2",
+      id: "3",
       name: "Sarah Patel",
       level: "General Manager",
       division: "Production",
@@ -31,7 +41,7 @@ const contactData = {
       bgColor: "bg-purple-500",
     },
     {
-      id: "3",
+      id: "4",
       name: "Marcus Lee",
       level: "General Manager",
       division: "Quality Control",
@@ -41,7 +51,7 @@ const contactData = {
       bgColor: "bg-purple-500",
     },
     {
-      id: "4",
+      id: "5",
       name: "Tommy Nguyen",
       level: "Department Head",
       division: "Supply Chain",
@@ -53,7 +63,7 @@ const contactData = {
   ],
   peer: [
     {
-      id: "5",
+      id: "6",
       name: "Jessica Wong",
       level: "Department Head",
       division: "Operations Planning",
@@ -63,7 +73,7 @@ const contactData = {
       bgColor: "bg-purple-500",
     },
     {
-      id: "6",
+      id: "7",
       name: "David Kim",
       level: "Manager",
       division: "Finance",
@@ -92,39 +102,39 @@ export default function ActiveCallPage() {
   const getConversationData = (contactName: string) => [
     {
       speaker: contactName,
-      text: "Poin yang sangat penting. Saya akan coba ajukan alternatif yang minim biaya, misalnya memakai aset internal dan fasilitator dari tim kita sendiri. Saya juga akan menyusun jadwal yang menghindari jam-jam sibuk, jadi tidak menambah tekanan kerja.",
+      text: "Terima kasih sudah menghubungi saya via call. Seperti yang saya bilang di chat tadi, saya sedang sangat sibuk hari ini dan lebih efektif kalau kita diskusi langsung seperti ini.",
     },
     {
       speaker: "Head of Procurement & IT",
-      text: "Saya oke saja, selama koordinasinya jelas.",
+      text: "Baik, saya mengerti. Langsung saja ya, mengenai proposal sponsorship S24 yang kemarin.",
     },
     {
       speaker: contactName,
-      text: "Baik, saya akan pastikan semua detail dikomunikasikan dengan baik kepada seluruh tim.",
+      text: "Ya betul. Saya sudah review semua dokumen yang Anda kirim. Secara garis besar, konsepnya sudah bagus dan sesuai dengan strategic direction kita.",
     },
     {
       speaker: "Head of Procurement & IT",
-      text: "Untuk timeline implementasi, apakah kita bisa mulai minggu depan?",
+      text: "Bagaimana dengan budget allocation-nya? Apakah masih dalam range yang acceptable?",
     },
     {
       speaker: contactName,
-      text: "Saya rasa itu feasible. Mari kita buat action plan yang detail terlebih dahulu.",
+      text: "Budget-nya reasonable, tapi saya perlu diskusi dengan finance team dulu untuk final approval. Kira-kira timeline implementasi-nya kapan?",
     },
     {
       speaker: "Head of Procurement & IT",
-      text: "Setuju. Kita juga perlu mempertimbangkan resource allocation untuk project ini.",
+      text: "Idealnya kita bisa start awal bulan depan, tapi flexible sesuai kebutuhan tim.",
     },
     {
       speaker: contactName,
-      text: "Betul sekali. Saya akan prepare draft budget dan resource planning untuk meeting selanjutnya.",
+      text: "Perfect. Saya akan coordinate dengan semua stakeholder terkait dan give you update by end of this week. Apakah ada concern lain yang perlu kita address sekarang?",
     },
     {
       speaker: "Head of Procurement & IT",
-      text: "Bagaimana dengan approval dari management? Apakah sudah ada green light?",
+      text: "Untuk saat ini sudah cukup comprehensive. Terima kasih untuk waktu dan feedback-nya.",
     },
     {
       speaker: contactName,
-      text: "Untuk approval awal sudah ada, tapi untuk budget detail masih perlu presentasi ke board.",
+      text: "Sama-sama. Saya appreciate initiative ini dan looking forward untuk collaboration selanjutnya. Let's make this project successful.",
     },
   ]
 
