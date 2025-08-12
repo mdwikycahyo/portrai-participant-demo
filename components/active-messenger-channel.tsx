@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Send, X, Phone } from "lucide-react"
+import { Send, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,29 +41,8 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
     }
   }
 
-  const handleCallClick = () => {
-    // Check if it's Ezra Kaell from "Peluang Sponsorship S24" channel
-    if (selectedParticipant?.name === "Ezra Kaell" && channel.name === "Peluang Sponsorship S24") {
-      router.push("/call/active/1")
-    } else {
-      // Add a message from the contact saying they're not available for calls
-      const currentTime = new Date().toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-
-      const unavailableMessage = {
-        id: `msg-${Date.now()}`,
-        senderName: selectedParticipant?.name || "Contact",
-        senderAvatar: selectedParticipant?.avatar || "C",
-        content: "Maaf, saya sedang tidak tersedia untuk panggilan saat ini. Bisa kita lanjutkan via chat?",
-        timestamp: currentTime,
-        isUser: false,
-      }
-
-      setMessages((prev) => [...prev, unavailableMessage])
-    }
+  const handleCallNowClick = () => {
+    router.push("/call/active/1")
   }
 
   // Determine header content based on selectedParticipant
@@ -86,6 +65,15 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
     ? `Ketik pesan Anda ke ${selectedParticipant.name}...`
     : "Ketik pesan Anda di sini..."
 
+  // Check if message should have call button
+  const shouldShowCallButton = (message: any) => {
+    return (
+      message.senderName === "Ezra Kaell" &&
+      message.content.includes("Bisa kita discuss proposal sponsorship ini via call saja?") &&
+      channel.name === "Peluang Sponsorship S24"
+    )
+  }
+
   return (
     <div className="flex-1 flex h-full">
       {/* Main Chat Area */}
@@ -102,11 +90,6 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
                 <p className="text-sm text-gray-600">{headerContent.subtitle}</p>
               </div>
             </div>
-            {selectedParticipant && (
-              <Button variant="ghost" size="icon" onClick={handleCallClick}>
-                <Phone className="w-4 h-4" />
-              </Button>
-            )}
           </div>
         </div>
 
@@ -152,6 +135,18 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
                         }`}
                       >
                         <p>{message.content}</p>
+                        {shouldShowCallButton(message) && (
+                          <div className="mt-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleCallNowClick}
+                              className="text-sm bg-transparent"
+                            >
+                              Call Now
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <span className={`text-xs text-gray-500 mt-1 block ${message.isUser ? "text-right" : ""}`}>
                         {message.timestamp}
