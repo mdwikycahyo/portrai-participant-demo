@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Send, X } from "lucide-react"
+import { Send, X, Phone } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -119,42 +119,42 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
                 <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full">Senin, 11 Jan</span>
               </div>
 
-              {messages.map((message) => (
-                <div key={message.id} className="mb-4">
-                  <div className={`flex items-start gap-3 ${message.isUser ? "flex-row-reverse" : ""}`}>
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
-                      {message.senderAvatar}
-                    </div>
-                    <div className="flex-1">
-                      <div className={`flex items-center gap-2 mb-1 ${message.isUser ? "justify-end" : ""}`}>
-                        <span className="text-sm font-medium text-gray-900">~{message.senderName}</span>
-                      </div>
-                      <div
-                        className={`p-3 rounded-lg shadow-sm max-w-md ${
-                          message.isUser ? "bg-blue-500 text-white ml-auto" : "bg-white text-gray-700"
-                        }`}
-                      >
-                        <p>{message.content}</p>
-                        {shouldShowCallButton(message) && (
-                          <div className="mt-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleCallNowClick}
-                              className="text-sm bg-transparent"
-                            >
-                              Call Now
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <span className={`text-xs text-gray-500 mt-1 block ${message.isUser ? "text-right" : ""}`}>
-                        {message.timestamp}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+{messages.map((message) => (
+  <div key={message.id} className="mb-4">
+    <div className={`flex items-start gap-3 ${message.isUser ? "flex-row-reverse" : ""}`}>
+      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
+        {message.senderAvatar}
+      </div>
+      <div className="flex-1">
+        <div className={`flex items-center gap-2 mb-1 ${message.isUser ? "justify-end" : ""}`}>
+          <span className="text-sm font-medium text-gray-900">~{message.senderName}</span>
+        </div>
+        <div
+          className={`p-3 rounded-lg shadow-sm max-w-md ${
+            message.isUser ? "bg-blue-500 text-white ml-auto" : "bg-white text-gray-700"
+          }`}
+        >
+          <p>{message.content}</p>
+          {shouldShowCallButton(message) && (
+            <div className="-mx-3 -mb-3 mt-3 border-t border-gray-200">
+              <button
+                onClick={handleCallNowClick}
+                className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gray-100 hover:bg-blue-100 rounded-b-lg transition-colors duration-200"
+              >
+                <Phone className="w-4 h-4 text-blue-500" />
+                <span className="text-blue-500 font-medium">Call Now</span>
+              </button>
+            </div>
+          )}
+        </div>
+        <span className={`text-xs text-gray-500 mt-1 block ${message.isUser ? "text-right" : ""}`}>
+          {message.timestamp}
+        </span>
+      </div>
+    </div>
+  </div>
+))}
+
             </>
           )}
         </div>
