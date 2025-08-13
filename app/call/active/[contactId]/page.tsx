@@ -167,11 +167,13 @@ export default function ActiveCallPage() {
   }, [contact, currentMessageIndex, currentCharIndex, conversationData])
 
   const handleCompleteCall = () => {
-    router.push("/messenger?callEnd=complete&contact=ezra")
+    // Use window.location.href for a full page navigation instead of client-side routing
+    window.location.href = "/messenger?callEnd=complete&contact=ezra"
   }
 
   const handleDisconnectCall = () => {
-    router.push("/messenger?callEnd=disconnect&contact=ezra")
+    // Use window.location.href for a full page navigation instead of client-side routing
+    window.location.href = "/messenger?callEnd=disconnect&contact=ezra"
   }
 
   const toggleMute = () => {

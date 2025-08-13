@@ -41,55 +41,66 @@ export default function MessengerPage() {
 
     if (callEnd && contact === "ezra" && !callEndProcessed) {
       setCallEndProcessed(true)
+      
+      // Use functional update to access the latest channels state
+      setChannels((prevChannels) => {
+        // Find Ezra's channel
+        const ezraChannel = prevChannels.find((channel) => channel.name === "Peluang Sponsorship S24")
+        const ezraParticipant = ezraChannel?.participants.find((p) => p.name === "Ezra Kaell")
 
-      // Find Ezra's channel
-      const ezraChannel = channels.find((channel) => channel.name === "Peluang Sponsorship S24")
-      const ezraParticipant = ezraChannel?.participants.find((p) => p.name === "Ezra Kaell")
+        if (ezraChannel && ezraParticipant) {
+          // Auto-select Ezra's channel and participant
+          setSelectedChannelId(ezraChannel.id)
+          setSelectedParticipant(ezraParticipant)
 
-      if (ezraChannel && ezraParticipant) {
-        // Auto-select Ezra's channel and participant
-        setSelectedChannelId(ezraChannel.id)
-        setSelectedParticipant(ezraParticipant)
+          // Add call end messages
+          const currentTime = new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })
 
-        // Add call end messages
-        const currentTime = new Date().toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })
+          // Generate truly unique IDs with random strings
+          const randomStr1 = Math.random().toString(36).substring(2, 8)
+          const randomStr2 = Math.random().toString(36).substring(2, 8)
+          
+          const systemMessage = {
+            id: `msg-system-${Date.now()}-${randomStr1}`,
+            senderName: "System",
+            senderAvatar: "S",
+            content: callEnd === "complete" ? "Panggilan selesai (5:23 durasi)" : "Panggilan terputus (2:15 durasi)",
+            timestamp: currentTime,
+            isUser: false,
+          }
 
-        const systemMessage = {
-          id: `msg-system-${Date.now()}`,
-          senderName: "System",
-          senderAvatar: "S",
-          content: callEnd === "complete" ? "Panggilan selesai (5:23 durasi)" : "Panggilan terputus (2:15 durasi)",
-          timestamp: currentTime,
-          isUser: false,
-        }
+          const ezraMessage = {
+            id: `msg-ezra-${Date.now()}-${randomStr2}`,
+            senderName: "Ezra Kaell",
+            senderAvatar: "EK",
+            content:
+              callEnd === "complete"
+                ? "Terima kasih untuk diskusi yang produktif! Saya akan follow up action items yang kita bahas."
+                : "Sepertinya panggilan kita terputus. Bisa kita lanjutkan di sini atau coba call lagi.",
+            timestamp: currentTime,
+            isUser: false,
+          }
 
-        const ezraMessage = {
-          id: `msg-ezra-${Date.now() + 1}`,
-          senderName: "Ezra Kaell",
-          senderAvatar: "EK",
-          content:
-            callEnd === "complete"
-              ? "Terima kasih untuk diskusinya. Saya akan follow up action items yang kita bahas tadi."
-              : "Sepertinya panggilan kita terputus. Bisa kita lanjutkan dengan mencoba untuk call lagi.",
-          timestamp: currentTime,
-          isUser: false,
-        }
-
-        // Update the channel with new messages
-        setChannels((prevChannels) =>
-          prevChannels.map((channel) =>
+          // Return updated channels
+          return prevChannels.map((channel) =>
             channel.id === ezraChannel.id
               ? { ...channel, messages: [...channel.messages, systemMessage, ezraMessage] }
               : channel,
-          ),
-        )
-      }
+          )
+        }
+        
+        // If no Ezra channel found, return unchanged
+        return prevChannels
+      })
+      
+      // We're not clearing URL parameters to ensure the page works correctly when accessed directly
+      // This allows the URL parameters to remain when the page is loaded directly
     }
-  }, [searchParams, callEndProcessed, channels])
+  }, [searchParams, callEndProcessed]) // Removed channels from dependency array
 
   const handleChannelSelect = (channelId: string) => {
     setSelectedChannelId(channelId)
