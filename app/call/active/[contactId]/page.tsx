@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Mic, MicOff, Phone } from "lucide-react"
+import { Mic, MicOff, Phone, PhoneOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Layout } from "@/components/layout"
 
 // Mock contact data with Ezra Kaell as contactId "1"
@@ -165,8 +166,12 @@ export default function ActiveCallPage() {
     return () => clearInterval(interval)
   }, [contact, currentMessageIndex, currentCharIndex, conversationData])
 
-  const handleEndCall = () => {
-    router.push("/call")
+  const handleCompleteCall = () => {
+    router.push("/messenger?callEnd=complete&contact=ezra")
+  }
+
+  const handleDisconnectCall = () => {
+    router.push("/messenger?callEnd=disconnect&contact=ezra")
   }
 
   const toggleMute = () => {
@@ -224,23 +229,48 @@ export default function ActiveCallPage() {
               </div>
 
               {/* Call Controls */}
-              <div className="flex justify-center gap-4">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={toggleMute}
-                  className={`w-12 h-12 rounded-full ${isMuted ? "bg-red-100 border-red-300" : "bg-gray-100"}`}
-                >
-                  {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                </Button>
-                <Button
-                  size="lg"
-                  onClick={handleEndCall}
-                  className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white"
-                >
-                  <Phone className="w-5 h-5" />
-                </Button>
-              </div>
+              <TooltipProvider>
+                <div className="flex justify-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={toggleMute}
+                    className={`w-12 h-12 rounded-full ${isMuted ? "bg-red-100 border-red-300" : "bg-gray-100"}`}
+                  >
+                    {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  </Button>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="lg"
+                        onClick={handleCompleteCall}
+                        className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white"
+                      >
+                        <Phone className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>End Call</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="lg"
+                        onClick={handleDisconnectCall}
+                        className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white"
+                      >
+                        <PhoneOff className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Simulate Disconnect</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             </div>
 
             {/* Transcript Panel */}
