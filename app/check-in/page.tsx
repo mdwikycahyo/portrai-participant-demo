@@ -1,11 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { UserProfileDropdown } from "@/components/user-profile-dropdown"
+import dynamic from 'next/dynamic'
+
+// Dynamically import PDF components to avoid SSR issues
+const PDFViewer = dynamic(() => import('./pdf-viewer'), {
+  ssr: false,
+  loading: () => <div className="h-[550px] flex items-center justify-center">Loading PDF viewer...</div>
+})
 
 export default function CheckInPage() {
   const router = useRouter()
@@ -18,31 +25,37 @@ export default function CheckInPage() {
 
   return (
     <div className="flex flex-col h-screen mx-auto px-6 py-6 bg-gray-50">
-      {/* Header with user profile */}
-      <header className="flex justify-end items-center mb-2">
-        <UserProfileDropdown 
-          showWorkHourBanner={false}
-          onToggleWorkHourBanner={() => {}}
-          showAssessmentReminderBanner={false}
-          onToggleAssessmentReminderBanner={() => {}}
-        />
-      </header>
-
-      {/* Timer and Check-in button */}
-      <div className="flex justify-between items-center mb-2">
-        <div>
-          <p className="text-sm text-gray-500">Memulai assessment dalam:</p>
-          <p className="text-4xl font-mono font-bold text-gray-900 tracking-wider">2:59:59</p>
+      <header className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-3">
+          {/* Timer icon */}
+          <div className="text-blue-600">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0012 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Assessment starts in:</p>
+            <p className="text-2xl font-mono font-bold text-gray-900 tracking-wider">2:59:59</p>
+          </div>
         </div>
-        <div className="flex space-x-4">
+        
+        <div className="flex items-center gap-4">
           <Button 
             onClick={handleCheckIn}
-            className="bg-gray-800 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-700 transition-colors"
+            className="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Check-in
           </Button>
+          {/* Vertical separator */}
+          <div className="h-8 w-px bg-gray-300"></div>
+          <UserProfileDropdown 
+            showWorkHourBanner={false}
+            onToggleWorkHourBanner={() => {}}
+            showAssessmentReminderBanner={false}
+            onToggleAssessmentReminderBanner={() => {}}
+          />
         </div>
-      </div>
+      </header>
 
       {/* Tabs */}
       <div className="mb-2">
@@ -195,8 +208,8 @@ export default function CheckInPage() {
         {/* Simulation Tab Content */}
         {activeTab === "simulation" && (
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Simulation</h1>
-            <p className="text-gray-600">Simulation content will be displayed here.</p>
+            <h1 className="text-xl font-bold text-gray-800 mb-2">Simulation</h1>
+            <PDFViewer />
           </div>
         )}
         
