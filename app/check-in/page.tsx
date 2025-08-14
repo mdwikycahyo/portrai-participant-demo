@@ -1,10 +1,15 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { UserProfileDropdown } from "@/components/user-profile-dropdown"
 
 export default function CheckInPage() {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState("compatibility")
 
   const handleCheckIn = () => {
     // Simulate starting the assessment by navigating to the home page
@@ -12,45 +17,197 @@ export default function CheckInPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-lg space-y-8 text-center">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3">
-          <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center p-1">
-            <svg
-              width="30"
-              height="31"
-              viewBox="0 0 30 31"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-full"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M6.49994 3.22034C5.43766 3.97671 4.47707 4.87098 3.64318 5.87766C7.05081 5.55551 11.3801 6.08155 16.4063 8.64066C21.7736 11.3733 26.0957 11.4657 29.1036 10.8749C28.8307 10.0335 28.487 9.22474 28.0801 8.45594C24.6368 8.82575 20.2225 8.33625 15.0781 5.71705C11.8113 4.05379 8.9317 3.36864 6.49994 3.22034ZM26.0687 5.54063C23.3495 2.44695 19.3979 0.5 14.9997 0.5C13.7081 0.5 12.4549 0.667935 11.2602 0.983509C12.8782 1.43309 14.5972 2.09082 16.4063 3.01196C20.1728 4.92962 23.4246 5.54707 26.0687 5.54063ZM29.7467 13.8285C26.1128 14.5592 21.0948 14.4092 15.0781 11.3457C9.4531 8.4818 4.97608 8.51787 1.95662 9.20115C1.80077 9.23639 1.64858 9.27343 1.50007 9.312C1.10475 10.1875 0.78919 11.1081 0.562774 12.0641C0.804599 11.9983 1.05449 11.9358 1.31231 11.8774C4.97544 11.0485 10.1511 11.0845 16.4063 14.2693C22.0314 17.1333 26.5084 17.0972 29.5279 16.4139C29.6313 16.3906 29.7333 16.3664 29.8335 16.3414C29.8445 16.103 29.85 15.8631 29.85 15.6219C29.85 15.0152 29.8149 14.4167 29.7467 13.8285ZM29.3486 19.5327C25.75 20.1733 20.8782 19.9275 15.0781 16.9744C9.4531 14.1105 4.97608 14.1466 1.95662 14.8298C1.28639 14.9814 0.68346 15.1662 0.15159 15.3612C0.150139 15.4479 0.149414 15.5348 0.149414 15.6219C0.149414 23.9736 6.79811 30.7439 14.9997 30.7439C21.8732 30.7439 27.6561 25.9887 29.3486 19.5327Z"
-                fill="#F3F4F6"
-              />
-            </svg>
-          </div>
-          <span className="text-2xl font-semibold text-gray-900">Logoipsum</span>
+    <div className="flex flex-col h-screen mx-auto px-6 py-6 bg-gray-50">
+      {/* Header with user profile */}
+      <header className="flex justify-end items-center mb-2">
+        <UserProfileDropdown 
+          showWorkHourBanner={false}
+          onToggleWorkHourBanner={() => {}}
+          showAssessmentReminderBanner={false}
+          onToggleAssessmentReminderBanner={() => {}}
+        />
+      </header>
+
+      {/* Timer and Check-in button */}
+      <div className="flex justify-between items-center mb-2">
+        <div>
+          <p className="text-sm text-gray-500">Memulai assessment dalam:</p>
+          <p className="text-4xl font-mono font-bold text-gray-900 tracking-wider">2:59:59</p>
         </div>
-
-        <h1 className="text-4xl font-bold text-gray-900 mt-8">Selamat Datang di PortrAI</h1>
-
-        <p className="text-lg text-gray-700 leading-relaxed max-w-ld mx-auto">
-          Sesi asesmen Anda hari ini siap dimulai. Setelah mengklik &quot;Check In&quot;, sesi asesmen akan mulai berjalan dan terus aktif hingga Anda &quot;Check Out&quot; atau waktu sesi asesmen Anda habis.
-        </p>
-
-        <Button
-          onClick={handleCheckIn}
-          className="w-full max-w-xs bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-lg font-medium transition-colors"
-        >
-          Check In
-        </Button>
-
-        <p className="text-sm text-gray-600 mt-4">Pastikan Anda siap untuk memulai asesmen Anda sebelum check-in.</p>
+        <div className="flex space-x-4">
+          <Button 
+            onClick={handleCheckIn}
+            className="bg-gray-800 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Check-in
+          </Button>
+        </div>
       </div>
+
+      {/* Tabs */}
+      <div className="mb-2">
+        <div className="flex border-b border-gray-200 mb-2">
+          <button
+            onClick={() => setActiveTab("compatibility")}
+            className={`py-2 px-4 flex items-center ${activeTab === "compatibility" ? "border-b-2 border-purple-500 text-purple-500 font-semibold" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            <span className="material-icons align-middle mr-2">radio_button_unchecked</span>
+            Compatibility
+          </button>
+          <button
+            onClick={() => setActiveTab("simulation")}
+            className={`py-2 px-4 flex items-center ${activeTab === "simulation" ? "border-b-2 border-purple-500 text-purple-500 font-semibold" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            <span className="material-icons align-middle text-gray-300 mr-2">radio_button_unchecked</span>
+            Simulation
+          </button>
+          <button
+            onClick={() => setActiveTab("platform")}
+            className={`py-2 px-4 flex items-center ${activeTab === "platform" ? "border-b-2 border-purple-500 text-purple-500 font-semibold" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            <span className="material-icons align-middle text-gray-300 mr-2">radio_button_unchecked</span>
+            Platform
+          </button>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <main className="flex-grow bg-white rounded-lg shadow-sm p-4">
+        {/* Compatibility Tab Content */}
+        {activeTab === "compatibility" && (
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h1 className="text-xl font-bold text-gray-800">Compatibility Check</h1>
+              <Button
+                className="flex items-center bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-900 transition-colors text-sm"
+              >
+                <span className="material-icons mr-2 text-base">refresh</span>
+                Check Device
+              </Button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Compatibility checking is a pre-requisite procedure that allows your
+              devices to be tested for its compatibility with EnGauge. The procedure
+              will automatically detects any compatibility issues across your
+              devices. Please contact EnGauge's helpdesk if any issues have been
+              detected. Proceed to "close" the page if all of your devices are clear
+              and ready to go.
+            </p>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="flex flex-col sticky top-0">
+                <img
+                  alt="A placeholder image."
+                  className="rounded-lg w-full h-auto object-cover mb-4 flex-shrink-0 max-h-[350px]"
+                  src="https://dummyimage.com/400x350/e5e5e5/666666&text=PortrAI"
+                />
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-lg font-bold text-gray-800 mb-2">
+                  Compatibility Check Result
+                </h2>
+                <div className="space-y-2 flex-grow">
+                  <div>
+                    <div className="flex items-center text-gray-500 text-sm mb-1">
+                      <span className="material-icons text-sm mr-2">videocam_off</span>
+                      <p>Camera - <span className="text-red-500">Not Allowed</span></p>
+                    </div>
+                    <div className="relative">
+                      <select
+                        className="w-full bg-gray-100 border border-gray-300 rounded-lg py-2 px-3 appearance-none text-sm"
+                      >
+                        <option>Nemesis HD I920</option>
+                      </select>
+                      <span
+                        className="material-icons absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                      >expand_more</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center text-gray-500 text-sm mb-1">
+                      <span className="material-icons text-sm mr-2">mic_off</span>
+                      <p>Mic - <span className="text-red-500">Incompatible</span></p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-grow">
+                        <select
+                          className="w-full bg-gray-100 border border-gray-300 rounded-lg py-2 px-3 appearance-none text-sm"
+                        >
+                          <option>Razzer, Mic Lite 2.0</option>
+                        </select>
+                        <span
+                          className="material-icons absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                        >expand_more</span>
+                      </div>
+                      <button className="flex items-center text-sm text-gray-600">
+                        <span className="material-icons text-sm mr-1">graphic_eq</span>
+                        Test
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center text-gray-500 text-sm mb-1">
+                      <span className="material-icons text-sm mr-2">volume_off</span>
+                      <p>Speaker - <span className="text-red-500">Not Allowed</span></p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex-grow">
+                        <select
+                          className="w-full bg-gray-100 border border-gray-300 rounded-lg py-2 px-3 appearance-none text-sm"
+                        >
+                          <option>Macbook Air Speaker</option>
+                        </select>
+                        <span
+                          className="material-icons absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                        >expand_more</span>
+                      </div>
+                      <button className="flex items-center text-sm text-gray-600">
+                        <span className="material-icons text-sm mr-1">graphic_eq</span>
+                        Test
+                      </button>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2 space-y-2 sticky bottom-0 bg-white">
+                    <div>
+                      <div className="flex items-center text-gray-500 text-sm">
+                        <span className="material-icons text-sm mr-2">desktop_windows</span>
+                        <p>Operating System</p>
+                      </div>
+                      <p className="text-gray-800 ml-6 text-sm">
+                        You are using OS X 10.10 Yosemite
+                      </p>
+                    </div>
+                    <div>
+                      <div className="flex items-center text-gray-500 text-sm">
+                        <span className="material-icons text-sm mr-2">public</span>
+                        <p>Browser</p>
+                      </div>
+                      <p className="text-gray-800 ml-6 text-sm">
+                        You are using Microsoft Edge (19.0.21)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Simulation Tab Content */}
+        {activeTab === "simulation" && (
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">Simulation</h1>
+            <p className="text-gray-600">Simulation content will be displayed here.</p>
+          </div>
+        )}
+        
+        {/* Platform Tab Content */}
+        {activeTab === "platform" && (
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">Platform</h1>
+            <p className="text-gray-600">Platform content will be displayed here.</p>
+          </div>
+        )}
+      </main>
     </div>
   )
 }
