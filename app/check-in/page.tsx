@@ -1,409 +1,101 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { UserProfileDropdown } from "@/components/user-profile-dropdown"
-import dynamic from 'next/dynamic'
-
-// Dynamically import PDF components to avoid SSR issues
-const PDFViewer = dynamic(() => import('./pdf-viewer'), {
-  ssr: false,
-  loading: () => <div className="h-[550px] flex items-center justify-center">Loading PDF viewer...</div>
-})
-
-// Define component states
-type ComponentStatus = 'pending' | 'checking' | 'compatible'
-
-interface ComponentState {
-  camera: ComponentStatus
-  mic: ComponentStatus
-  speaker: ComponentStatus
-  os: ComponentStatus
-  browser: ComponentStatus
-}
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { TabType } from "./types";
+import { CheckInHeader } from "./components/CheckInHeader";
+import { CheckInTabs } from "./components/CheckInTabs";
+import { CompatibilityTab } from "./components/CompatibilityTab";
+import { SimulationTab } from "./components/SimulationTab";
+import { PlatformTab } from "./components/PlatformTab";
+import { useDeviceChecking } from "./hooks/useDeviceChecking";
+import { useTimer } from "./hooks/useTimer";
+import { useScrollDetection } from "./hooks/useScrollDetection";
 
 export default function CheckInPage() {
-  const router = useRouter()
-  const [activeTab, setActiveTab] = useState("compatibility")
-  const [isChecking, setIsChecking] = useState(false)
-  const [componentStates, setComponentStates] = useState<ComponentState>({
-    camera: 'pending',
-    mic: 'pending',
-    speaker: 'pending',
-    os: 'pending',
-    browser: 'pending'
-  })
-  const [isCompatibilityComplete, setIsCompatibilityComplete] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(10) // 10 seconds countdown
-  const [isCheckInEnabled, setIsCheckInEnabled] = useState(false)
-  const [hasReadSimulation, setHasReadSimulation] = useState(false)
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<TabType>("compatibility");
+  const [hasReadSimulation, setHasReadSimulation] = useState(false);
+  const [hasReadPlatform, setHasReadPlatform] = useState(false);
+
+  // Custom hooks
+  const { timeLeft, isCheckInEnabled } = useTimer(10);
+  const {
+    isChecking,
+    componentStates,
+    isCompatibilityComplete,
+    handleCheckDevice,
+  } = useDeviceChecking();
+  const { activeSection, setActiveSection } = useScrollDetection(activeTab);
+
+  // Check if all tabs are completed
+  const allTabsCompleted = isCompatibilityComplete && hasReadSimulation && hasReadPlatform;
 
   const handleCheckIn = () => {
-    // Only allow check-in if timer has finished
-    if (!isCheckInEnabled) return
+    // Only allow check-in if timer has finished and all tabs are completed
+    if (!isCheckInEnabled || !allTabsCompleted) return;
     // Simulate starting the assessment by navigating to the home page
-    router.push("/home")
-  }
+    router.push("/home");
+  };
 
-  const handleCheckDevice = async () => {
-    if (isChecking) return
-
-    setIsChecking(true)
-    setIsCompatibilityComplete(false)
-    
-    // Reset all components to pending
-    setComponentStates({
-      camera: 'pending',
-      mic: 'pending',
-      speaker: 'pending',
-      os: 'pending',
-      browser: 'pending'
-    })
-
-    // Start all components checking simultaneously
-    const components = ['camera', 'mic', 'speaker', 'os', 'browser'] as const
-    
-    // Set all components to checking state immediately
-    setComponentStates({
-      camera: 'checking',
-      mic: 'checking',
-      speaker: 'checking',
-      os: 'checking',
-      browser: 'checking'
-    })
-
-    // Create parallel promises for each component with different completion times
-    const componentPromises = components.map((component, index) => {
-      // Stagger completion times slightly (1-3 seconds) for visual variety
-      const completionTime = 1000 + (Math.random() * 2000) // 1-3 seconds
-      
-      return new Promise<void>(resolve => {
-        setTimeout(() => {
-          setComponentStates(prev => ({
-            ...prev,
-            [component]: 'compatible'
-          }))
-          resolve()
-        }, completionTime)
-      })
-    })
-
-    // Wait for all components to complete
-    await Promise.all(componentPromises)
-    
-    setIsChecking(false)
-    setIsCompatibilityComplete(true)
-  }
-
-  // Auto-start checking and countdown timer on page load
+  // Auto-start checking on page load
   useEffect(() => {
     // Start compatibility checking automatically
-    handleCheckDevice()
-    
-    // Start countdown timer
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          setIsCheckInEnabled(true)
-          clearInterval(timer)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
+    handleCheckDevice();
+  }, [handleCheckDevice]);
 
-    return () => clearInterval(timer)
-  }, [])
-
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const getComponentDisplay = (status: ComponentStatus, componentName: string) => {
-    switch (status) {
-      case 'pending':
-        return {
-          icon: componentName === 'camera' ? 'videocam_off' : 
-                componentName === 'mic' ? 'mic_off' : 
-                componentName === 'speaker' ? 'volume_off' : 
-                componentName === 'os' ? 'desktop_windows' : 'public',
-          statusText: 'Not Checked',
-          statusColor: 'text-gray-500',
-          iconColor: 'text-gray-400'
-        }
-      case 'checking':
-        return {
-          icon: 'sync',
-          statusText: 'Checking...',
-          statusColor: 'text-blue-500',
-          iconColor: 'text-blue-500 animate-spin'
-        }
-      case 'compatible':
-        return {
-          icon: 'check_circle',
-          statusText: 'Compatible',
-          statusColor: 'text-green-500',
-          iconColor: 'text-green-500'
-        }
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "compatibility":
+        return (
+          <CompatibilityTab
+            componentStates={componentStates}
+            isChecking={isChecking}
+            onCheckDevice={handleCheckDevice}
+          />
+        );
+      case "simulation":
+        return (
+          <SimulationTab
+            hasReadSimulation={hasReadSimulation}
+            onReadSimulationChange={setHasReadSimulation}
+          />
+        );
+      case "platform":
+        return (
+          <PlatformTab
+            hasReadPlatform={hasReadPlatform}
+            onReadPlatformChange={setHasReadPlatform}
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+          />
+        );
+      default:
+        return null;
     }
-  }
+  };
 
   return (
     <div className="flex flex-col h-screen mx-auto px-6 py-6 bg-gray-50">
-      <header className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-3">
-          {/* Timer icon */}
-          <div className="text-blue-600">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0012 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
-            </svg>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Assessment starts in:</p>
-            <p className={`text-2xl font-mono font-bold tracking-wider ${timeLeft === 0 ? 'text-green-600' : 'text-gray-900'}`}>
-              00:00:{formatTime(timeLeft).split(':')[1]}
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <Button 
-            onClick={handleCheckIn}
-            disabled={!isCheckInEnabled}
-            className={`font-semibold py-2 px-6 rounded-lg transition-colors ${
-              isCheckInEnabled 
-                ? 'bg-green-600 text-white hover:bg-green-700' 
-                : 'bg-gray-400 text-gray-600 cursor-not-allowed'
-            }`}
-          >
-            Mulai Assessment
-          </Button>
-          {/* Vertical separator */}
-          <div className="h-8 w-px bg-gray-300"></div>
-          <UserProfileDropdown 
-            showWorkHourBanner={false}
-            onToggleWorkHourBanner={() => {}}
-            showAssessmentReminderBanner={false}
-            onToggleAssessmentReminderBanner={() => {}}
-          />
-        </div>
-      </header>
+      <CheckInHeader
+        timeLeft={timeLeft}
+        isCheckInEnabled={isCheckInEnabled}
+        allTabsCompleted={allTabsCompleted}
+        onCheckIn={handleCheckIn}
+      />
 
-      {/* Tabs */}
-      <div className="mb-2">
-        <div className="flex border-b border-gray-200 mb-2">
-          <button
-            onClick={() => setActiveTab("compatibility")}
-            className={`py-2 px-4 flex items-center ${activeTab === "compatibility" ? "border-b-2 border-purple-500 text-purple-500 font-semibold" : "text-gray-500 hover:text-gray-700"}`}
-          >
-            <span className={`material-icons align-middle mr-2 ${isCompatibilityComplete ? 'text-green-500' : ''}`}>
-              {isCompatibilityComplete ? 'check_circle' : 'radio_button_unchecked'}
-            </span>
-            Compatibility
-          </button>
-          <button
-            onClick={() => setActiveTab("simulation")}
-            className={`py-2 px-4 flex items-center ${activeTab === "simulation" ? "border-b-2 border-purple-500 text-purple-500 font-semibold" : "text-gray-500 hover:text-gray-700"}`}
-          >
-            <span className={`material-icons align-middle mr-2 ${hasReadSimulation ? 'text-green-500' : 'text-gray-300'}`}>
-              {hasReadSimulation ? 'check_circle' : 'radio_button_unchecked'}
-            </span>
-            Simulation
-          </button>
-          <button
-            onClick={() => setActiveTab("platform")}
-            className={`py-2 px-4 flex items-center ${activeTab === "platform" ? "border-b-2 border-purple-500 text-purple-500 font-semibold" : "text-gray-500 hover:text-gray-700"}`}
-          >
-            <span className="material-icons align-middle text-gray-300 mr-2">radio_button_unchecked</span>
-            Platform
-          </button>
-        </div>
-      </div>
+      <CheckInTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        isCompatibilityComplete={isCompatibilityComplete}
+        hasReadSimulation={hasReadSimulation}
+        hasReadPlatform={hasReadPlatform}
+      />
 
       {/* Main content */}
       <main className="flex-grow bg-white rounded-lg shadow-sm p-4 flex flex-col">
-        {/* Compatibility Tab Content */}
-        {activeTab === "compatibility" && (
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <h1 className="text-xl font-bold text-gray-800">Compatibility Check</h1>
-              <Button
-                onClick={handleCheckDevice}
-                disabled={isChecking}
-                className="flex items-center bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-900 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className={`material-icons mr-2 text-base ${isChecking ? 'animate-spin' : ''}`}>
-                  {isChecking ? 'sync' : 'refresh'}
-                </span>
-                {isChecking ? 'Checking...' : 'Re-check Device'}
-              </Button>
-            </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Compatibility checking is a pre-requisite procedure that allows your
-              devices to be tested for its compatibility with EnGauge. The procedure
-              will automatically detects any compatibility issues across your
-              devices. Please contact EnGauge's helpdesk if any issues have been
-              detected. Proceed to "close" the page if all of your devices are clear
-              and ready to go.
-            </p>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="flex flex-col sticky top-0">
-                <img
-                  alt="A placeholder image."
-                  className="rounded-lg w-full h-auto object-cover mb-4 flex-shrink-0 max-h-[350px]"
-                  src="https://dummyimage.com/400x350/e5e5e5/666666&text=PortrAI"
-                />
-              </div>
-              <div className="flex flex-col">
-                <h2 className="text-lg font-bold text-gray-800 mb-2">
-                  Compatibility Check Result
-                </h2>
-                <div className="space-y-2 flex-grow">
-                  <div>
-                    <div className="flex items-center text-gray-500 text-sm mb-1">
-                      <span className={`material-icons text-sm mr-2 ${getComponentDisplay(componentStates.camera, 'camera').iconColor}`}>
-                        {getComponentDisplay(componentStates.camera, 'camera').icon}
-                      </span>
-                      <p>Camera - <span className={getComponentDisplay(componentStates.camera, 'camera').statusColor}>
-                        {getComponentDisplay(componentStates.camera, 'camera').statusText}
-                      </span></p>
-                    </div>
-                    <div className="relative">
-                      <select
-                        disabled={componentStates.camera === 'checking'}
-                        className="w-full bg-gray-100 border border-gray-300 rounded-lg py-2 px-3 appearance-none text-sm disabled:opacity-50"
-                      >
-                        <option>Nemesis HD I920</option>
-                      </select>
-                      <span
-                        className="material-icons absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                      >expand_more</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center text-gray-500 text-sm mb-1">
-                      <span className={`material-icons text-sm mr-2 ${getComponentDisplay(componentStates.mic, 'mic').iconColor}`}>
-                        {getComponentDisplay(componentStates.mic, 'mic').icon}
-                      </span>
-                      <p>Mic - <span className={getComponentDisplay(componentStates.mic, 'mic').statusColor}>
-                        {getComponentDisplay(componentStates.mic, 'mic').statusText}
-                      </span></p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="relative flex-grow">
-                        <select
-                          disabled={componentStates.mic === 'checking'}
-                          className="w-full bg-gray-100 border border-gray-300 rounded-lg py-2 px-3 appearance-none text-sm disabled:opacity-50"
-                        >
-                          <option>Razzer, Mic Lite 2.0</option>
-                        </select>
-                        <span
-                          className="material-icons absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                        >expand_more</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center text-gray-500 text-sm mb-1">
-                      <span className={`material-icons text-sm mr-2 ${getComponentDisplay(componentStates.speaker, 'speaker').iconColor}`}>
-                        {getComponentDisplay(componentStates.speaker, 'speaker').icon}
-                      </span>
-                      <p>Speaker - <span className={getComponentDisplay(componentStates.speaker, 'speaker').statusColor}>
-                        {getComponentDisplay(componentStates.speaker, 'speaker').statusText}
-                      </span></p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="relative flex-grow">
-                        <select
-                          disabled={componentStates.speaker === 'checking'}
-                          className="w-full bg-gray-100 border border-gray-300 rounded-lg py-2 px-3 appearance-none text-sm disabled:opacity-50"
-                        >
-                          <option>Macbook Air Speaker</option>
-                        </select>
-                        <span
-                          className="material-icons absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                        >expand_more</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-200 pt-2 space-y-2 sticky bottom-0 bg-white">
-                    <div>
-                      <div className="flex items-center text-gray-500 text-sm">
-                        <span className={`material-icons text-sm mr-2 ${getComponentDisplay(componentStates.os, 'os').iconColor}`}>
-                          {getComponentDisplay(componentStates.os, 'os').icon}
-                        </span>
-                        <p>Operating System - <span className={getComponentDisplay(componentStates.os, 'os').statusColor}>
-                          {getComponentDisplay(componentStates.os, 'os').statusText}
-                        </span></p>
-                      </div>
-                      <p className="text-gray-800 ml-6 text-sm">
-                        You are using OS X 10.10 Yosemite
-                      </p>
-                    </div>
-                    <div>
-                      <div className="flex items-center text-gray-500 text-sm">
-                        <span className={`material-icons text-sm mr-2 ${getComponentDisplay(componentStates.browser, 'browser').iconColor}`}>
-                          {getComponentDisplay(componentStates.browser, 'browser').icon}
-                        </span>
-                        <p>Browser - <span className={getComponentDisplay(componentStates.browser, 'browser').statusColor}>
-                          {getComponentDisplay(componentStates.browser, 'browser').statusText}
-                        </span></p>
-                      </div>
-                      <p className="text-gray-800 ml-6 text-sm">
-                        You are using Microsoft Edge (19.0.21)
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Simulation Tab Content */}
-        {activeTab === "simulation" && (
-          <div className="flex flex-col flex-grow">
-            <div className="flex justify-between items-start mb-2">
-              <h1 className="text-xl font-bold text-gray-800">Simulation</h1>
-              <div className="max-w-md">
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="reading-agreement"
-                    checked={hasReadSimulation}
-                    onCheckedChange={(checked) => setHasReadSimulation(checked === true)}
-                    className="h-5 w-5"
-                  />
-                  <label 
-                    htmlFor="reading-agreement"
-                    className="text-sm font-medium text-gray-700 cursor-pointer"
-                  >
-                    I have read and understood the simulation material
-                  </label>
-                </div>
-
-              </div>
-            </div>
-            <div className="flex-grow">
-              <PDFViewer />
-            </div>
-          </div>
-        )}
-        
-        {/* Platform Tab Content */}
-        {activeTab === "platform" && (
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">Platform</h1>
-            <p className="text-gray-600">Platform content will be displayed here.</p>
-          </div>
-        )}
+        {renderTabContent()}
       </main>
     </div>
-  )
+  );
 }
