@@ -6,40 +6,7 @@ import { useState, useEffect, useRef } from "react"
 import { Bot, X, Send, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-
-interface Message {
-  id: string
-  text: string
-  isBot: boolean
-  type: "user" | "bot" | "reminder"
-  timestamp: string
-}
-
-const initialMessages: Message[] = [
-  {
-    id: "1",
-    text: "Ada yang bisa saya bantu?",
-    isBot: true,
-    type: "bot",
-    timestamp: new Date().toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }),
-  },
-]
-
-const botResponses = {
-  default: "Maaf, saya belum memahami pertanyaan Anda. Bisakah Anda menjelaskan lebih detail?",
-  greeting: "Halo! Saya Assessment Assistant. Saya di sini untuk membantu Anda menggunakan platform ini.",
-  navigation: "Anda dapat menggunakan sidebar di sebelah kiri untuk navigasi ke Beranda, Chat, Email, atau Documents.",
-  email:
-    "Di halaman Email, Anda dapat membaca, membalas, dan meneruskan email. Gunakan tombol Tulis untuk menulis email baru.",
-  documents:
-    "Di halaman Documents, Anda dapat melihat folder dan file. Klik folder untuk melihat isinya, atau klik file untuk membacanya.",
-  chat: "Di halaman Chat, Anda dapat berkomunikasi dengan rekan kerja. Pilih kontak dari daftar untuk memulai percakapan.",
-  help: "Saya dapat membantu Anda dengan navigasi, penggunaan email, manajemen dokumen, dan fitur chat. Apa yang ingin Anda ketahui?",
-}
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface AssessmentAssistantProps {
   isOpen: boolean
@@ -56,13 +23,14 @@ export function AssessmentAssistant({
   onNewMessageReceived,
   onChatOpened,
 }: AssessmentAssistantProps) {
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("assessment-assistant-messages")
-      return saved ? JSON.parse(saved) : initialMessages
-    }
-    return initialMessages
-  })
+  const {
+    messages,
+    addUserMessage,
+    addBotResponse,
+    addReminderMessage,
+    setHasNewMessage,
+  } = useAssessmentAssistant()
+  
   const [inputValue, setInputValue] = useState("")
   
   // Create a ref for the messages container
@@ -96,33 +64,15 @@ export function AssessmentAssistant({
     }
   }, [messages, isOpen])
 
-  // Persist messages to localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("assessment-assistant-messages", JSON.stringify(messages))
-    }
-  }, [messages])
-
   // Handle external messages (from Layout, e.g., banner triggers)
   useEffect(() => {
     if (externalMessage && externalMessage.text) {
-      const reminderMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        text: externalMessage.text,
-        isBot: true,
-        type: externalMessage.type,
-        timestamp: new Date().toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        }),
-      }
-      setMessages((prev) => [...prev, reminderMessage])
+      addReminderMessage(externalMessage.text)
       if (onNewMessageReceived) {
         onNewMessageReceived()
       }
     }
-  }, [externalMessage, onNewMessageReceived])
+  }, [externalMessage, onNewMessageReceived, addReminderMessage])
 
   // Notify parent when chat is opened
   useEffect(() => {
@@ -131,58 +81,15 @@ export function AssessmentAssistant({
     }
   }, [isOpen, onChatOpened])
 
-  const getBotResponse = (userMessage: string): string => {
-    const message = userMessage.toLowerCase()
-
-    if (message.includes("halo") || message.includes("hai") || message.includes("hello")) {
-      return botResponses.greeting
-    } else if (message.includes("navigasi") || message.includes("menu") || message.includes("sidebar")) {
-      return botResponses.navigation
-    } else if (message.includes("email") || message.includes("surat")) {
-      return botResponses.email
-    } else if (message.includes("dokumen") || message.includes("file") || message.includes("folder")) {
-      return botResponses.documents
-    } else if (message.includes("chat") || message.includes("pesan")) {
-      return botResponses.chat
-    } else if (message.includes("bantuan") || message.includes("help") || message.includes("tolong")) {
-      return botResponses.help
-    } else {
-      return botResponses.default
-    }
-  }
-
   const handleSendMessage = () => {
     if (!inputValue.trim()) return
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputValue,
-      isBot: false,
-      type: "user",
-      timestamp: new Date().toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      }),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
+    addUserMessage(inputValue)
     setInputValue("")
 
     // Simulate bot response delay
     setTimeout(() => {
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: getBotResponse(inputValue),
-        isBot: true,
-        type: "bot",
-        timestamp: new Date().toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        }),
-      }
-      setMessages((prev) => [...prev, botMessage])
+      addBotResponse(inputValue)
       if (onNewMessageReceived) {
         onNewMessageReceived()
       }
@@ -215,11 +122,6 @@ export function AssessmentAssistant({
             <X className="w-4 h-4" />
           </Button>
         </div>
-      </div>
-
-      {/* Coming Soon Banner */}
-      <div className="p-3 bg-gray-700 text-gray-300 text-center text-xs font-medium border-b border-gray-600">
-        Fitur ini belum termasuk dalam August Deliverable (Coming Soon!)
       </div>
 
       {/* Messages */}

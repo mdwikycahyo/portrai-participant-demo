@@ -2,11 +2,14 @@
 
 import { Layout } from "@/components/layout"
 import { DocumentsList } from "@/components/documents-list"
+import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
 
 export default function DocumentsPage() {
   return (
-    <Layout>
-      <DocumentsList />
-    </Layout>
+    <AssessmentAssistantProvider>
+      <Layout>
+        <DocumentsList />
+      </Layout>
+    </AssessmentAssistantProvider>
   )
 }
