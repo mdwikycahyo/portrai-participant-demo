@@ -6,7 +6,7 @@ interface Message {
   id: string
   text: string
   isBot: boolean
-  type: "user" | "bot" | "reminder"
+  type: "user" | "bot" | "reminder" | "tutorial"
   timestamp: string
 }
 
@@ -36,10 +36,23 @@ const botResponses = {
   help: "Saya dapat membantu Anda dengan navigasi, penggunaan email, manajemen dokumen, dan fitur chat. Apa yang ingin Anda ketahui?",
 }
 
+const tutorialMessages = [
+  "Halo Bapak Dwiky Cahyo, dan selamat datang di hari pertama Anda bersama Amboja!",
+  "Saya adalah AI Assistant yang ditugaskan untuk membantu Anda dalam sesi Asesmen ini. Silakan bertanya apa pun kepada saya kapan pun Anda butuh bantuan.",
+  "Di Amboja, kami percaya pada kekuatan kolaborasi, termasuk kolaborasi antara manusia dan AI.",
+  "Dalam PortrAI, Anda didorong untuk memanfaatkan teknologi AI dalam menyelesaikan pekerjaan Anda.",
+  "Serta, kami mengerti bahwa beradaptasi di lingkungan baru adalah sebuah tantangan. Oleh karena itu, kami ingin memastikan Anda mendapatkan dukungan penuh sejak awal.",
+  "Kami percaya bahwa masa depan dunia kerja (Future of Work) adalah tentang bagaimana kita bisa beradaptasi dan memanfaatkan informasi dengan cepat dan tepat dengan bantuan teknologi.",
+  "Sebagai langkah awal, apakah Anda ingin mengetahui lebih detail tentang Amboja dan nilai-nilai yang kami anut?"
+]
+
 interface AssessmentAssistantContextType {
   messages: Message[]
   isOpen: boolean
   hasNewMessage: boolean
+  isTutorialActive: boolean
+  tutorialStep: number
+  isTyping: boolean
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -48,6 +61,8 @@ interface AssessmentAssistantContextType {
   setHasNewMessage: (hasNew: boolean) => void
   clearMessages: () => void
   getBotResponse: (userMessage: string) => string
+  startTutorial: () => void
+  handleTutorialResponse: (userMessage: string) => void
 }
 
 const AssessmentAssistantContext = createContext<AssessmentAssistantContextType | undefined>(undefined)
@@ -56,6 +71,9 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [isOpen, setIsOpen] = useState(false)
   const [hasNewMessage, setHasNewMessage] = useState(false)
+  const [isTutorialActive, setIsTutorialActive] = useState(false)
+  const [tutorialStep, setTutorialStep] = useState(0)
+  const [isTyping, setIsTyping] = useState(false)
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -133,10 +151,80 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     }
   }, [])
 
+  const startTutorial = useCallback(() => {
+    setIsTutorialActive(true)
+    setTutorialStep(0)
+    setHasNewMessage(true)
+    
+    // Clear existing messages except the initial one
+    setMessages(initialMessages)
+    
+    // Start sending tutorial messages with delays
+    tutorialMessages.forEach((message, index) => {
+      setTimeout(() => {
+        setIsTyping(true)
+        
+        // Simulate typing delay
+        setTimeout(() => {
+          const tutorialMessage: Message = {
+            id: `tutorial-${index + 1}`,
+            text: message,
+            isBot: true,
+            type: "tutorial",
+            timestamp: new Date().toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          }
+          addMessage(tutorialMessage)
+          setIsTyping(false)
+          setTutorialStep(index + 1)
+          
+          // If this is the last message, allow user interaction
+          if (index === tutorialMessages.length - 1) {
+            setIsTutorialActive(false)
+          }
+        }, 1500) // Typing delay
+      }, index * 3000) // Delay between messages
+    })
+  }, [addMessage])
+
+  const handleTutorialResponse = useCallback((userMessage: string) => {
+    const message = userMessage.toLowerCase()
+    let response: string
+    
+    if (message.includes("ya") || message.includes("iya") || message.includes("baik") || message.includes("setuju")) {
+      response = "Baik. Karena ini adalah hari pertama Anda, saya akan segera memberitahu tim HR untuk menghubungi Anda langsung melalui Email. Mereka akan menyapa Anda sebentar lagi untuk proses selanjutnya."
+    } else {
+      response = "Baik. Namun, karena ini adalah hari pertama Anda, saya akan segera memberitahu tim HR untuk menghubungi Anda langsung melalui Email. Mereka akan menyapa Anda sebentar lagi untuk proses selanjutnya."
+    }
+    
+    // Send the response after a short delay
+    setTimeout(() => {
+      const responseMessage: Message = {
+        id: `tutorial-response-${Date.now()}`,
+        text: response,
+        isBot: true,
+        type: "tutorial",
+        timestamp: new Date().toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+      }
+      addMessage(responseMessage)
+      setHasNewMessage(true)
+    }, 1000)
+  }, [addMessage])
+
   const value: AssessmentAssistantContextType = {
     messages,
     isOpen,
     hasNewMessage,
+    isTutorialActive,
+    tutorialStep,
+    isTyping,
     addMessage,
     addUserMessage,
     addBotResponse,
@@ -145,6 +233,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setHasNewMessage,
     clearMessages,
     getBotResponse,
+    startTutorial,
+    handleTutorialResponse,
   }
 
   return (

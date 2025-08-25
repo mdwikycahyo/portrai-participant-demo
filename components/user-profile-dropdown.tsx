@@ -1,6 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { ChevronDown, LogOut, Clock, Info } from "lucide-react" // Added Bell and Info icons
+import { ChevronDown, LogOut, Clock, Info, Play } from "lucide-react" // Added Bell, Info, and Play icons
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch" // Import Switch
 import { Label } from "@/components/ui/label" // Import Label
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface UserProfileDropdownProps {
   showWorkHourBanner: boolean
@@ -25,6 +26,7 @@ export function UserProfileDropdown({
   onToggleAssessmentReminderBanner,
 }: UserProfileDropdownProps) {
   const router = useRouter()
+  const { startTutorial } = useAssessmentAssistant()
 
   const handleLogout = () => {
     router.push("/")
@@ -32,6 +34,10 @@ export function UserProfileDropdown({
 
   const handleCheckout = () => {
     router.push("/check-in")
+  }
+
+  const handleStartTutorial = () => {
+    startTutorial()
   }
 
   return (
@@ -81,6 +87,11 @@ export function UserProfileDropdown({
             onCheckedChange={onToggleAssessmentReminderBanner}
             className="ml-auto"
           />
+        </DropdownMenuItem>
+        {/* Start Interactive Tutorial */}
+        <DropdownMenuItem onClick={handleStartTutorial} className="cursor-pointer">
+          <Play className="w-4 h-4 mr-2" />
+          Interactive Tutorial
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleCheckout} className="cursor-pointer">

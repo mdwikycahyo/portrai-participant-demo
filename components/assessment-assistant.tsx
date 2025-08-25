@@ -29,6 +29,10 @@ export function AssessmentAssistant({
     addBotResponse,
     addReminderMessage,
     setHasNewMessage,
+    isTutorialActive,
+    tutorialStep,
+    isTyping,
+    handleTutorialResponse,
   } = useAssessmentAssistant()
   
   const [inputValue, setInputValue] = useState("")
@@ -64,6 +68,13 @@ export function AssessmentAssistant({
     }
   }, [messages, isOpen])
 
+  // Scroll to bottom when typing animation starts
+  useEffect(() => {
+    if (isOpen && isTyping) {
+      scrollToBottom()
+    }
+  }, [isTyping, isOpen])
+
   // Handle external messages (from Layout, e.g., banner triggers)
   useEffect(() => {
     if (externalMessage && externalMessage.text) {
@@ -85,11 +96,18 @@ export function AssessmentAssistant({
     if (!inputValue.trim()) return
 
     addUserMessage(inputValue)
+    const currentInput = inputValue
     setInputValue("")
 
-    // Simulate bot response delay
+    // Check if we just finished the tutorial and this is the response to the final question
+    if (tutorialStep === 7 && !isTutorialActive) {
+      handleTutorialResponse(currentInput)
+      return
+    }
+
+    // Normal bot response
     setTimeout(() => {
-      addBotResponse(inputValue)
+      addBotResponse(currentInput)
       if (onNewMessageReceived) {
         onNewMessageReceived()
       }
@@ -149,7 +167,7 @@ export function AssessmentAssistant({
                     ? "bg-blue-500 text-white"
                     : message.type === "reminder"
                       ? "bg-indigo-800 text-white"
-                      : "bg-gray-700 text-gray-100"
+                      : "bg-green-800 text-white"
                 }`}
               >
                 <p className="text-sm">{message.text}</p>
@@ -158,6 +176,26 @@ export function AssessmentAssistant({
             </div>
           </div>
         ))}
+        
+        {/* Typing indicator */}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%]">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-gray-300" />
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-gray-700 text-gray-100">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Invisible element to scroll to */}
         <div ref={messagesEndRef} />
       </div>
@@ -169,10 +207,16 @@ export function AssessmentAssistant({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ketik pesan Anda..."
-            className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500"
+            placeholder={isTutorialActive || isTyping ? "Mohon tunggu..." : "Ketik pesan Anda..."}
+            disabled={isTutorialActive || isTyping}
+            className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          <Button onClick={handleSendMessage} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white p-2">
+          <Button 
+            onClick={handleSendMessage} 
+            size="sm" 
+            disabled={isTutorialActive || isTyping}
+            className="bg-blue-600 hover:bg-blue-700 text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Send className="w-4 h-4" />
           </Button>
         </div>
