@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Eye,
   Download,
@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface EmailContentProps {
   emailId: string
@@ -38,26 +39,9 @@ const emailData = {
 
 Selamat datang di Amboja! Kami sangat senang Anda bergabung dengan tim kami.
 
-Sebagai bagian dari proses onboarding, kami telah menyiapkan misi pertama yang akan membantu Anda terbiasa dengan alur kerja dan platform yang digunakan di Amboja.
+Sebagai bagian dari proses onboarding, saya melampirkan profil perusahaan Amboja untuk membantu Anda memahami visi, misi, dan budaya kerja kami.
 
-**MISI PERTAMA: EKSPLORASI PLATFORM**
-
-Tugas Anda adalah:
-
-1. **Eksplorasi Fitur Email**: Cobalah untuk membalas email ini dan kirimkan konfirmasi bahwa Anda telah menerima misi ini.
-
-2. **Jelajahi Documents**: Buka halaman Documents dan lihat folder "Onboarding Materials". Di dalamnya terdapat panduan lengkap tentang budaya kerja dan prosedur operasional Amboja.
-
-3. **Coba Fitur Chat**: Kembali ke fitur Messenger dan beritahu saya melalui chat bahwa Anda telah membaca email ini dan siap untuk memulai tugas-tugas berikutnya.
-
-4. **Familiarisasi dengan Call System**: Pada saat yang tepat, tim akan mengundang Anda untuk bergabung dalam panggilan tim untuk perkenalan lebih lanjut.
-
-**Catatan Penting:**
-- Tidak ada deadline yang ketat untuk misi ini, tetapi usahakan untuk menyelesaikannya dalam 1-2 hari ke depan
-- Jika ada pertanyaan atau kendala, jangan ragu untuk menghubungi saya melalui chat atau email
-- Misi ini dirancang untuk membantu Anda beradaptasi dengan lingkungan kerja digital di Amboja
-
-Sekali lagi, selamat datang di keluarga besar Amboja. Kami menantikan kontribusi dan kolaborasi Anda!
+Silakan luangkan waktu untuk membaca dokumen tersebut. Jika ada pertanyaan, jangan ragu untuk menghubungi saya melalui chat atau email.
 
 Salam hangat,
 
@@ -65,9 +49,7 @@ Mia Avira
 VP of Human Resources  
 Amboja Technology`,
     attachments: [
-      "Employee Handbook - Amboja 2024.pdf",
-      "Platform User Guide.pdf", 
-      "Emergency Contacts & Procedures.pdf",
+      "Profil Perusahaan Amboja.pdf",
     ],
   },
   "ux-researcher": {
@@ -108,8 +90,65 @@ export function EmailContent({ emailId }: EmailContentProps) {
   const [replyContent, setReplyContent] = useState("")
   const [forwardRecipient, setForwardRecipient] = useState("")
   const [showContactSelection, setShowContactSelection] = useState(false)
+  const { markEmailAsRead, addDownloadedDocument } = useAssessmentAssistant()
 
   const email = emailData[emailId as keyof typeof emailData]
+
+  // Mark email as read when first-mission email is opened
+  useEffect(() => {
+    if (emailId === "first-mission") {
+      markEmailAsRead()
+    }
+  }, [emailId, markEmailAsRead])
+
+  const handleDownload = (attachmentName: string) => {
+    if (emailId === "first-mission" && attachmentName === "Profil Perusahaan Amboja.pdf") {
+      const document = {
+        id: "profil-perusahaan-amboja",
+        name: "Profil Perusahaan Amboja.pdf",
+        date: new Date().toLocaleDateString("id-ID", { 
+          day: "numeric", 
+          month: "short", 
+          year: "numeric" 
+        }),
+        owner: { name: "Mia Avira", avatar: "MA" },
+        folderId: null,
+        content: {
+          title: "Profil Perusahaan Amboja",
+          author: "Mia Avira",
+          lastUpdate: new Date().toLocaleDateString("id-ID", { 
+            day: "numeric", 
+            month: "long", 
+            year: "numeric" 
+          }),
+          pages: 8,
+          sections: [
+            {
+              title: "Tentang Amboja",
+              content: `Amboja adalah perusahaan teknologi yang berfokus pada pengembangan solusi digital inovatif untuk berbagai industri. Didirikan pada tahun 2018, kami telah berkembang menjadi salah satu pemain utama dalam ekosistem teknologi Indonesia.
+
+Visi kami adalah menjadi perusahaan teknologi terdepan yang memberikan dampak positif bagi masyarakat melalui inovasi berkelanjutan. Misi kami meliputi pengembangan produk teknologi yang user-friendly, pemberdayaan talenta lokal, dan kontribusi terhadap transformasi digital Indonesia.
+
+Nilai-nilai perusahaan kami: Inovasi, Kolaborasi, Integritas, Keberlanjutan, dan Kepedulian terhadap Pelanggan.`
+            },
+            {
+              title: "Budaya Kerja",
+              content: `Di Amboja, kami percaya bahwa budaya kerja yang positif adalah kunci kesuksesan. Kami menerapkan prinsip work-life balance, mendorong kreativitas dan inovasi, serta membangun lingkungan kerja yang inklusif dan supportif.
+
+Tim kami terdiri dari profesional muda yang passionate dan berpengalaman dari berbagai latar belakang. Kami menghargai keberagaman dan percaya bahwa perbedaan perspektif akan menghasilkan solusi yang lebih baik.
+
+Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui program pelatihan, mentoring, dan kesempatan untuk berkontribusi dalam proyek-proyek menantang.`
+            }
+          ],
+        },
+      }
+      
+      addDownloadedDocument(document)
+      
+      // Simulate download
+      alert(`Dokumen "${attachmentName}" berhasil didownload dan ditambahkan ke Documents!`)
+    }
+  }
 
   if (!email) return null
 
@@ -279,7 +318,12 @@ export function EmailContent({ emailId }: EmailContentProps) {
                     <Button variant="ghost" size="sm" disabled>
                       <Eye className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" disabled>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDownload(attachment)}
+                      className="hover:bg-blue-100 hover:text-blue-600"
+                    >
                       <Download className="w-4 h-4" />
                     </Button>
                   </div>
@@ -289,10 +333,6 @@ export function EmailContent({ emailId }: EmailContentProps) {
           </div>
           {/* Action Buttons (when not in reply/forward mode) */}
           <div className="flex gap-3 mt-8">
-            <Button onClick={() => setReplyMode("forward")} className="bg-gray-800 hover:bg-gray-700 text-white">
-              <Forward className="w-4 h-4 mr-2" />
-              Teruskan
-            </Button>
             <Button onClick={() => setReplyMode("reply")} className="bg-gray-800 hover:bg-gray-700 text-white">
               Balas
             </Button>

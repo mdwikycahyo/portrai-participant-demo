@@ -3,8 +3,14 @@
 import Link from "next/link"
 import { Folder, FileText } from "lucide-react"
 import { documentsData } from "@/lib/documents-data"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 export function DocumentsList() {
+  const { downloadedDocuments } = useAssessmentAssistant()
+  
+  // Combine original files with downloaded documents
+  const allFiles = [...documentsData.allFiles, ...downloadedDocuments]
+  
   return (
     <div className="px-6 pb-6">
       <h1 className="text-4xl font-bold text-gray-900 mb-8">Documents</h1>
@@ -41,7 +47,7 @@ export function DocumentsList() {
             <div>Folder</div>
           </div>
           <div className="divide-y divide-gray-200">
-            {documentsData.allFiles.map((file) => {
+            {allFiles.map((file) => {
               const folder = documentsData.folders.find((f) => f.id === file.folderId)
               return (
                 <Link

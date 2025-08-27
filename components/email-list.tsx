@@ -1,6 +1,7 @@
 "use client"
 
 import { Paperclip } from "lucide-react"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface EmailListProps {
   selectedEmail: string | null
@@ -66,6 +67,7 @@ const emails = {
 }
 
 export function EmailList({ selectedEmail, onEmailSelect, activeTab }: EmailListProps) {
+  const { onboardingEmailSent, emailRead } = useAssessmentAssistant()
   const currentEmails = emails[activeTab as keyof typeof emails] || []
 
   if (currentEmails.length === 0) {
@@ -92,7 +94,12 @@ export function EmailList({ selectedEmail, onEmailSelect, activeTab }: EmailList
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-gray-900 truncate">{email.sender}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-900 truncate">{email.sender}</h3>
+                  {email.id === "first-mission" && onboardingEmailSent && !emailRead && (
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">{email.time}</span>
                   {email.hasAttachment && <Paperclip className="w-4 h-4 text-gray-400" />}

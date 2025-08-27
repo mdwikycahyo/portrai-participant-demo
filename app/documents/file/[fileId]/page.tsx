@@ -6,13 +6,17 @@ import { ChevronLeft } from "lucide-react"
 import { Layout } from "@/components/layout"
 import { documentsData } from "@/lib/documents-data"
 import { Button } from "@/components/ui/button"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 export default function DocumentPage() {
   const params = useParams()
   const router = useRouter()
   const fileId = params.fileId as string
+  const { downloadedDocuments } = useAssessmentAssistant()
 
-  const file = documentsData.allFiles.find((f) => f.id === fileId)
+  // Check both original files and downloaded documents
+  const allFiles = [...documentsData.allFiles, ...downloadedDocuments]
+  const file = allFiles.find((f) => f.id === fileId)
 
   if (!file) {
     return (

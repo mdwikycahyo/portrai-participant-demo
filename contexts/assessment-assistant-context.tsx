@@ -1,6 +1,8 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react"
+import type { DocumentFile } from "@/lib/documents-data"
+import { onboardingChannel } from "@/lib/messenger-data"
 
 interface Message {
   id: string
@@ -59,6 +61,10 @@ interface AssessmentAssistantContextType {
   onboardingChannelTriggered: boolean
   onboardingEmailSent: boolean
   hasInteractedWithMia: boolean
+  emailRead: boolean
+  downloadedDocuments: DocumentFile[]
+  onboardingMessages: any[]
+  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase'
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -72,6 +78,10 @@ interface AssessmentAssistantContextType {
   triggerOnboardingChannel: () => void
   triggerOnboardingEmail: () => void
   markMiaAsInteracted: () => void
+  markEmailAsRead: () => void
+  addDownloadedDocument: (document: DocumentFile) => void
+  addOnboardingMessage: (message: any) => void
+  setConversationStage: (stage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase') => void
   resetTutorialProgress: () => void
 }
 
@@ -88,6 +98,10 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [onboardingChannelTriggered, setOnboardingChannelTriggered] = useState(false)
   const [onboardingEmailSent, setOnboardingEmailSent] = useState(false)
   const [hasInteractedWithMia, setHasInteractedWithMia] = useState(false)
+  const [emailRead, setEmailRead] = useState(false)
+  const [downloadedDocuments, setDownloadedDocuments] = useState<DocumentFile[]>([])
+  const [onboardingMessages, setOnboardingMessages] = useState(onboardingChannel.messages)
+  const [conversationStage, setConversationStage] = useState<'initial' | 'waiting_for_response' | 'responded' | 'mission_phase'>('initial')
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -306,6 +320,18 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setHasInteractedWithMia(true)
   }, [])
 
+  const markEmailAsRead = useCallback(() => {
+    setEmailRead(true)
+  }, [])
+
+  const addDownloadedDocument = useCallback((document: DocumentFile) => {
+    setDownloadedDocuments(prev => [...prev, document])
+  }, [])
+
+  const addOnboardingMessage = useCallback((message: any) => {
+    setOnboardingMessages(prev => [...prev, message])
+  }, [])
+
   const resetTutorialProgress = useCallback(() => {
     setMessages(initialMessages)
     setIsTutorialActive(false)
@@ -315,6 +341,10 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setOnboardingChannelTriggered(false)
     setOnboardingEmailSent(false)
     setHasInteractedWithMia(false)
+    setEmailRead(false)
+    setDownloadedDocuments([])
+    setOnboardingMessages(onboardingChannel.messages)
+    setConversationStage('initial')
     setHasNewMessage(false)
   }, [])
 
@@ -329,6 +359,10 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     onboardingChannelTriggered,
     onboardingEmailSent,
     hasInteractedWithMia,
+    emailRead,
+    downloadedDocuments,
+    onboardingMessages,
+    conversationStage,
     addMessage,
     addUserMessage,
     addBotResponse,
@@ -342,6 +376,10 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     triggerOnboardingChannel,
     triggerOnboardingEmail,
     markMiaAsInteracted,
+    markEmailAsRead,
+    addDownloadedDocument,
+    addOnboardingMessage,
+    setConversationStage,
     resetTutorialProgress,
   }
 

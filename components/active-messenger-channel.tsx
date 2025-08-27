@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import type { Channel } from "@/lib/messenger-data"
-import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+
 
 type Participant = {
   name: string
@@ -21,94 +21,48 @@ type Participant = {
 interface ActiveMessengerChannelProps {
   channel: Channel
   selectedParticipant: Participant | null
+  onSendMessage: (channelId: string, message: any) => void
+  onOnboardingTrigger: () => void
+  isTyping: boolean
+  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase'
 }
 
-export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveMessengerChannelProps) {
+export function ActiveMessengerChannel({ 
+  channel, 
+  selectedParticipant, 
+  onSendMessage, 
+  onOnboardingTrigger, 
+  isTyping, 
+  conversationStage 
+}: ActiveMessengerChannelProps) {
   const [isParticipantsPanelOpen, setIsParticipantsPanelOpen] = useState(false)
   const [messageInput, setMessageInput] = useState("")
-  const [messages, setMessages] = useState(channel.messages)
-  const [isTyping, setIsTyping] = useState(false)
-  const [hasLoadedInitialMessages, setHasLoadedInitialMessages] = useState(false)
-  const [conversationStage, setConversationStage] = useState<'initial' | 'waiting_for_response' | 'responded' | 'mission_phase'>('initial')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const { onboardingEmailSent, triggerOnboardingEmail, markMiaAsInteracted } = useAssessmentAssistant()
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  // Update messages when channel changes
-  useEffect(() => {
-    setMessages(channel.messages)
-    setHasLoadedInitialMessages(false) // Reset when channel changes
-    setConversationStage('initial') // Reset conversation stage
   }, [channel.messages])
 
-  // Auto-load remaining messages for onboarding channel
+  // Trigger onboarding when Mia is selected in onboarding channel
   useEffect(() => {
     if (
       channel.id === "onboarding-channel" && 
-      selectedParticipant?.name === "Mia Avira" && 
-      !hasLoadedInitialMessages
+      selectedParticipant?.name === "Mia Avira"
     ) {
-      // Double-check we only have the initial message to prevent duplicates
-      const initialMessageCount = messages.filter(msg => !msg.isUser).length
-      const hasWelcomeMessage = messages.some(msg => msg.content.includes("Selamat datang di Amboja"))
-      const hasQuestionMessage = messages.some(msg => msg.content.includes("Bagaimana sejauh ini"))
+      // Check if we already have the welcome and question messages to prevent duplicates
+      const hasWelcomeMessage = channel.messages.some(msg => msg.content.includes("Selamat datang di Amboja"))
+      const hasQuestionMessage = channel.messages.some(msg => msg.content.includes("Bagaimana sejauh ini"))
       
-      if (initialMessageCount === 1 && !hasWelcomeMessage && !hasQuestionMessage) {
-        setHasLoadedInitialMessages(true)
-      
-      // Define the remaining messages with truly unique IDs
-      const baseTimestamp = Date.now()
-      const remainingMessages = [
-        {
-          id: `onboarding-auto-${baseTimestamp}-${Math.random().toString(36).substring(2)}-1`,
-          senderName: "Mia Avira",
-          senderAvatar: "MA",
-          content: "Selamat datang di Amboja. Saya turut senang akhirnya Anda bergabung dengan tim kami hari ini.",
-          isUser: false,
-        },
-        {
-          id: `onboarding-auto-${baseTimestamp}-${Math.random().toString(36).substring(2)}-2`,
-          senderName: "Mia Avira",
-          senderAvatar: "MA",
-          content: "Bagaimana sejauh ini? Apakah sesi perkenalan dengan AI Assistant kami cukup membantu?",
-          isUser: false,
-        }
-      ]
-
-      // Simulate typing for each message
-      remainingMessages.forEach((message, index) => {
-        setTimeout(() => {
-          // Start typing
-          setIsTyping(true)
-          
-          // After typing delay, add message
-          setTimeout(() => {
-            const messageWithTimestamp = {
-              ...message,
-              timestamp: new Date().toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              }),
-            }
-            setMessages((prev) => [...prev, messageWithTimestamp])
-            setIsTyping(false)
-            
-            // Update conversation stage when the question is asked
-            if (index === 1) { // The second message in the array (index 1) is the question
-              setConversationStage('waiting_for_response')
-            }
-          }, 2000) // 2 second typing delay
-        }, index * 3000) // Stagger messages by 3 seconds
-      })
+      // Only trigger if we don't have these messages yet
+      if (!hasWelcomeMessage && !hasQuestionMessage) {
+        onOnboardingTrigger()
       }
     }
-  }, [channel.id, selectedParticipant?.name, hasLoadedInitialMessages])
+  }, [channel.id, selectedParticipant?.name, channel.messages, onOnboardingTrigger])
+
+
 
   const handleSendMessage = () => {
     if (messageInput.trim()) {
@@ -125,142 +79,13 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
         isUser: true,
       }
 
-      // Add user message
-      setMessages((prev) => [...prev, userMessage])
+      // Send message via parent callback
+      onSendMessage(channel.id, userMessage)
       setMessageInput("")
-
-      // Handle onboarding flow responses from Mia Avira
-      if (channel.id === "onboarding-channel" && selectedParticipant?.name === "Mia Avira") {
-        setConversationStage('responded')
-        markMiaAsInteracted() // Mark that user has interacted with Mia
-        handleMiaAviraResponse(userMessage.content)
-      }
     }
   }
 
-  const handleMiaAviraResponse = (userMessage: string) => {
-    // Check if user responded positively and if this is their first response to Mia's question
-    // Note: We add 1 because this function is called before the user message is added to the array
-    const userResponses = messages.filter(msg => msg.isUser).length + 1
-    const isFirstResponse = userResponses === 1 // This is the first user response
-    const isPositiveResponse = /\b(ya|iya|baik|setuju|bagus|membantu|sangat|positif|terbantu)\b/i.test(userMessage.toLowerCase())
-    
-    if (isFirstResponse && isPositiveResponse) {
-      // Send follow-up messages from Mia
-      setTimeout(() => {
-        const thanksMessage = {
-          id: `msg-mia-thanks-${Date.now()}`,
-          senderName: "Mia Avira",
-          senderAvatar: "MA",
-          content: "Baik, terima kasih atas jawaban anda.",
-          timestamp: new Date().toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }),
-          isUser: false,
-        }
-        setMessages((prev) => [...prev, thanksMessage])
 
-        // Second message about first mission
-        setTimeout(() => {
-          const missionIntroMessage = {
-            id: `msg-mia-mission-intro-${Date.now()}`,
-            senderName: "Mia Avira",
-            senderAvatar: "MA",
-            content: "Sebagai bagian dari onboarding, saya ingin memberikan Anda sebuah misi pertama. Ini akan membantu Anda terbiasa dengan alur kerja dan platform kita.",
-            timestamp: new Date().toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            }),
-            isUser: false,
-          }
-          setMessages((prev) => [...prev, missionIntroMessage])
-
-          // Third message about email
-          setTimeout(() => {
-            const emailMessage = {
-              id: `msg-mia-email-${Date.now()}`,
-              senderName: "Mia Avira",
-              senderAvatar: "MA",
-              content: "Saya baru saja mengirimkan email dengan judul **'Misi Pertama Anda di Amboja'**. Bisa tolong cek dan kabari saya melalui fitur chat ini jika sudah Anda terima?",
-              timestamp: new Date().toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              }),
-              isUser: false,
-            }
-            setMessages((prev) => [...prev, emailMessage])
-            
-            // Trigger email sending after the email message is sent
-            setTimeout(() => {
-              triggerOnboardingEmail() // This will trigger the email to appear
-              setConversationStage('mission_phase')
-            }, 1000)
-          }, 2000)
-        }, 2000)
-      }, 1500)
-    } else if (isFirstResponse && !isPositiveResponse) {
-      // Handle non-positive response
-      setTimeout(() => {
-        const clarificationMessage = {
-          id: `msg-mia-clarification-${Date.now()}`,
-          senderName: "Mia Avira",
-          senderAvatar: "MA",
-          content: "Terima kasih atas feedback Anda. Jika ada hal yang perlu diperbaiki dari AI Assistant kami, tim akan mengevaluasinya. Mari kita lanjutkan dengan proses onboarding.",
-          timestamp: new Date().toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }),
-          isUser: false,
-        }
-        setMessages((prev) => [...prev, clarificationMessage])
-        
-        // Continue with mission introduction after acknowledgment
-        setTimeout(() => {
-          const missionIntroMessage = {
-            id: `msg-mia-mission-intro-alt-${Date.now()}`,
-            senderName: "Mia Avira",
-            senderAvatar: "MA",
-            content: "Sebagai bagian dari onboarding, saya ingin memberikan Anda sebuah misi pertama. Ini akan membantu Anda terbiasa dengan alur kerja dan platform kita.",
-            timestamp: new Date().toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            }),
-            isUser: false,
-          }
-          setMessages((prev) => [...prev, missionIntroMessage])
-
-          // Email message
-          setTimeout(() => {
-            const emailMessage = {
-              id: `msg-mia-email-alt-${Date.now()}`,
-              senderName: "Mia Avira",
-              senderAvatar: "MA",
-              content: "Saya baru saja mengirimkan email dengan judul **'Misi Pertama Anda di Amboja'**. Bisa tolong cek dan kabari saya melalui fitur chat ini jika sudah Anda terima?",
-              timestamp: new Date().toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              }),
-              isUser: false,
-            }
-            setMessages((prev) => [...prev, emailMessage])
-            
-            // Trigger email sending
-            setTimeout(() => {
-              triggerOnboardingEmail()
-              setConversationStage('mission_phase')
-            }, 1000)
-          }, 2000)
-        }, 2000)
-      }, 1500)
-    }
-  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -348,7 +173,7 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
 
         {/* Messages */}
         <div className="flex-1 p-4 bg-gray-50 overflow-y-auto">
-          {messages.length === 0 ? (
+          {channel.messages.length === 0 ? (
             /* Empty Chat State */
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
@@ -372,7 +197,7 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
                 <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full">Senin, 11 Jan</span>
               </div>
 
-              {messages.map((message) => (
+              {channel.messages.map((message) => (
                 <div key={message.id} className="mb-4">
                   {isSystemMessage(message) ? (
                     /* System Message - Centered */
@@ -396,7 +221,10 @@ export function ActiveMessengerChannel({ channel, selectedParticipant }: ActiveM
                             message.isUser ? "bg-blue-500 text-white ml-auto" : "bg-white text-gray-700"
                           }`}
                         >
-                          <p dangerouslySetInnerHTML={{ __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                          <div 
+                            className="whitespace-pre-line" 
+                            dangerouslySetInnerHTML={{ __html: message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} 
+                          />
                           {shouldShowCallButton(message) && (
                             <div className="-mx-3 -mb-3 mt-3 border-t border-gray-200">
                               <button

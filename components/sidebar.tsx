@@ -8,7 +8,7 @@ import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { onboardingChannelTriggered, onboardingEmailSent, hasInteractedWithMia } = useAssessmentAssistant()
+  const { onboardingChannelTriggered, onboardingEmailSent, hasInteractedWithMia, emailRead } = useAssessmentAssistant()
   
   const navigation = [
     { name: "Beranda", href: "/home", icon: Home },
@@ -22,7 +22,7 @@ export function Sidebar() {
       name: "Email", 
       href: "/email", 
       icon: Mail, 
-      hasNotification: onboardingEmailSent 
+      hasNotification: onboardingEmailSent && !emailRead 
     },
     { name: "Call", href: "/call", icon: Phone },
     { name: "Documents", href: "/documents", icon: Folder },
