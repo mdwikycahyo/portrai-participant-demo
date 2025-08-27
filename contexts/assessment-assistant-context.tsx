@@ -37,13 +37,14 @@ const botResponses = {
 }
 
 const tutorialMessages = [
-  "Halo Bapak Dwiky Cahyo, dan selamat datang di hari pertama Anda bersama Amboja!",
-  "Saya adalah AI Assistant yang ditugaskan untuk membantu Anda dalam sesi Asesmen ini. Silakan bertanya apa pun kepada saya kapan pun Anda butuh bantuan.",
+  "Halo Bapak Dwiky Cahyo, ini adalah hari pertama Anda bekerja bersama Amboja! Saya adalah AI Assistant yang akan menjadi rekan kerja virtual untuk memandu Anda dalam sesi Prework ini.",
+  "Ini adalah langkah awal dari perjalanan Anda. Apakah Anda sudah siap untuk memulai?"
+]
+
+const tutorialContinuationMessages = [
   "Di Amboja, kami percaya pada kekuatan kolaborasi, termasuk kolaborasi antara manusia dan AI.",
-  "Dalam PortrAI, Anda didorong untuk memanfaatkan teknologi AI dalam menyelesaikan pekerjaan Anda.",
-  "Serta, kami mengerti bahwa beradaptasi di lingkungan baru adalah sebuah tantangan. Oleh karena itu, kami ingin memastikan Anda mendapatkan dukungan penuh sejak awal.",
-  "Kami percaya bahwa masa depan dunia kerja (Future of Work) adalah tentang bagaimana kita bisa beradaptasi dan memanfaatkan informasi dengan cepat dan tepat dengan bantuan teknologi.",
-  "Sebagai langkah awal, apakah Anda ingin mengetahui lebih detail tentang Amboja dan nilai-nilai yang kami anut?"
+  "Anda dianjurkan untuk memanfaatkan teknologi AI dalam menyelesaikan pekerjaan Anda dengan lebih efektif.",
+  "Konsep ini cukup jelas ya, Bapak?"
 ]
 
 interface AssessmentAssistantContextType {
@@ -53,6 +54,7 @@ interface AssessmentAssistantContextType {
   isTutorialActive: boolean
   tutorialStep: number
   isTyping: boolean
+  conversationPhase: 'initial' | 'readiness_check' | 'collaboration_intro' | 'clarity_check' | 'completion'
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -74,6 +76,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [isTutorialActive, setIsTutorialActive] = useState(false)
   const [tutorialStep, setTutorialStep] = useState(0)
   const [isTyping, setIsTyping] = useState(false)
+  const [conversationPhase, setConversationPhase] = useState<'initial' | 'readiness_check' | 'collaboration_intro' | 'clarity_check' | 'completion'>('initial')
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -155,20 +158,107 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setIsTutorialActive(true)
     setTutorialStep(0)
     setHasNewMessage(true)
+    setConversationPhase('initial')
     
     // Clear existing messages except the initial one
     setMessages(initialMessages)
     
-    // Start sending tutorial messages with delays
-    tutorialMessages.forEach((message, index) => {
+    // Send the first tutorial message immediately
+    setTimeout(() => {
+      setIsTyping(true)
+      
+      setTimeout(() => {
+        const tutorialMessage: Message = {
+          id: `tutorial-1`,
+          text: tutorialMessages[0],
+          isBot: true,
+          type: "tutorial",
+          timestamp: new Date().toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+        }
+        addMessage(tutorialMessage)
+        setIsTyping(false)
+        setTutorialStep(1)
+        
+        // Send the second message (readiness question) after a delay
+        setTimeout(() => {
+          setIsTyping(true)
+          
+          setTimeout(() => {
+            const readinessMessage: Message = {
+              id: `tutorial-2`,
+              text: tutorialMessages[1],
+              isBot: true,
+              type: "tutorial",
+              timestamp: new Date().toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              }),
+            }
+            addMessage(readinessMessage)
+            setIsTyping(false)
+            setTutorialStep(2)
+            setConversationPhase('readiness_check')
+            setIsTutorialActive(false) // Allow user to respond
+          }, 1500)
+        }, 2000)
+      }, 1500)
+    }, 500)
+  }, [addMessage])
+
+  const handleTutorialResponse = useCallback((userMessage: string) => {
+    const message = userMessage.toLowerCase()
+    const isPositiveResponse = message.includes("ya") || message.includes("iya") || message.includes("baik") || message.includes("setuju") || message.includes("siap")
+    
+    if (conversationPhase === 'readiness_check' && isPositiveResponse) {
+      // Continue to collaboration introduction
+      setConversationPhase('collaboration_intro')
+      setIsTutorialActive(true)
+      
+      // Send the collaboration messages
+      tutorialContinuationMessages.forEach((messageText, index) => {
+        setTimeout(() => {
+          setIsTyping(true)
+          
+          setTimeout(() => {
+            const tutorialMessage: Message = {
+              id: `tutorial-continuation-${index + 1}`,
+              text: messageText,
+              isBot: true,
+              type: "tutorial",
+              timestamp: new Date().toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              }),
+            }
+            addMessage(tutorialMessage)
+            setIsTyping(false)
+            setTutorialStep(3 + index)
+            
+            // If this is the last message (clarity check), allow user interaction
+            if (index === tutorialContinuationMessages.length - 1) {
+              setConversationPhase('clarity_check')
+              setIsTutorialActive(false)
+            }
+          }, 1500)
+        }, (index + 1) * 3000)
+      })
+    } else if (conversationPhase === 'clarity_check' && isPositiveResponse) {
+      // Final completion message
+      setConversationPhase('completion')
+      
       setTimeout(() => {
         setIsTyping(true)
         
-        // Simulate typing delay
         setTimeout(() => {
-          const tutorialMessage: Message = {
-            id: `tutorial-${index + 1}`,
-            text: message,
+          const finalMessage: Message = {
+            id: `tutorial-final`,
+            text: "Baik. Kalau begitu, sebagai langkah selanjutnya, saya akan langsung informasikan tim HR untuk menghubungi Anda melalui Chat. Mereka akan segera menyapa Anda untuk memulai proses onboarding.",
             isBot: true,
             type: "tutorial",
             timestamp: new Date().toLocaleTimeString("id-ID", {
@@ -177,46 +267,13 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
               hour12: true,
             }),
           }
-          addMessage(tutorialMessage)
+          addMessage(finalMessage)
           setIsTyping(false)
-          setTutorialStep(index + 1)
-          
-          // If this is the last message, allow user interaction
-          if (index === tutorialMessages.length - 1) {
-            setIsTutorialActive(false)
-          }
-        }, 1500) // Typing delay
-      }, index * 3000) // Delay between messages
-    })
-  }, [addMessage])
-
-  const handleTutorialResponse = useCallback((userMessage: string) => {
-    const message = userMessage.toLowerCase()
-    let response: string
-    
-    if (message.includes("ya") || message.includes("iya") || message.includes("baik") || message.includes("setuju")) {
-      response = "Baik. Karena ini adalah hari pertama Anda, saya akan segera memberitahu tim HR untuk menghubungi Anda langsung melalui Email. Mereka akan menyapa Anda sebentar lagi untuk proses selanjutnya."
-    } else {
-      response = "Baik. Namun, karena ini adalah hari pertama Anda, saya akan segera memberitahu tim HR untuk menghubungi Anda langsung melalui Email. Mereka akan menyapa Anda sebentar lagi untuk proses selanjutnya."
+          setHasNewMessage(true)
+        }, 1500)
+      }, 1000)
     }
-    
-    // Send the response after a short delay
-    setTimeout(() => {
-      const responseMessage: Message = {
-        id: `tutorial-response-${Date.now()}`,
-        text: response,
-        isBot: true,
-        type: "tutorial",
-        timestamp: new Date().toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        }),
-      }
-      addMessage(responseMessage)
-      setHasNewMessage(true)
-    }, 1000)
-  }, [addMessage])
+  }, [conversationPhase, addMessage])
 
   const value: AssessmentAssistantContextType = {
     messages,
@@ -225,6 +282,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     isTutorialActive,
     tutorialStep,
     isTyping,
+    conversationPhase,
     addMessage,
     addUserMessage,
     addBotResponse,

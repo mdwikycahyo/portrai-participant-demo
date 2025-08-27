@@ -32,6 +32,7 @@ export function AssessmentAssistant({
     isTutorialActive,
     tutorialStep,
     isTyping,
+    conversationPhase,
     handleTutorialResponse,
   } = useAssessmentAssistant()
   
@@ -99,19 +100,21 @@ export function AssessmentAssistant({
     const currentInput = inputValue
     setInputValue("")
 
-    // Check if we just finished the tutorial and this is the response to the final question
-    if (tutorialStep === 7 && !isTutorialActive) {
+    // Check if we're in a tutorial phase that expects user response
+    if ((conversationPhase === 'readiness_check' || conversationPhase === 'clarity_check') && !isTutorialActive) {
       handleTutorialResponse(currentInput)
       return
     }
 
-    // Normal bot response
-    setTimeout(() => {
-      addBotResponse(currentInput)
-      if (onNewMessageReceived) {
-        onNewMessageReceived()
-      }
-    }, 1000)
+    // Normal bot response (for non-tutorial interactions)
+    if (conversationPhase === 'completion' || conversationPhase === 'initial') {
+      setTimeout(() => {
+        addBotResponse(currentInput)
+        if (onNewMessageReceived) {
+          onNewMessageReceived()
+        }
+      }, 1000)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -207,7 +210,15 @@ export function AssessmentAssistant({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={isTutorialActive || isTyping ? "Mohon tunggu..." : "Ketik pesan Anda..."}
+            placeholder={
+              isTutorialActive || isTyping 
+                ? "Mohon tunggu..." 
+                : conversationPhase === 'readiness_check' 
+                  ? "Ketik jawaban Anda (Ya/Tidak)..."
+                  : conversationPhase === 'clarity_check'
+                    ? "Ketik jawaban Anda (Ya, jelas/Tidak)..."
+                    : "Ketik pesan Anda..."
+            }
             disabled={isTutorialActive || isTyping}
             className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
