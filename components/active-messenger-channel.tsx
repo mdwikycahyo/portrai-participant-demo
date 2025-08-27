@@ -24,7 +24,7 @@ interface ActiveMessengerChannelProps {
   onSendMessage: (channelId: string, message: any) => void
   onOnboardingTrigger: () => void
   isTyping: boolean
-  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase'
+  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion'
 }
 
 export function ActiveMessengerChannel({ 

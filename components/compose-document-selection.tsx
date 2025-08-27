@@ -3,7 +3,7 @@
 import { Search, ChevronDown, ChevronRight, Folder } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { documentsData, type DocumentFile } from "@/lib/documents-data"
 import {
   DropdownMenu,
@@ -29,6 +29,65 @@ export function ComposeDocumentSelection({
   isAnimating,
 }: ComposeDocumentSelectionProps) {
   const [expandedFolders, setExpandedFolders] = useState<string[]>([])
+  const [savedDocuments, setSavedDocuments] = useState<DocumentFile[]>([])
+
+  // Load saved documents from localStorage
+  useEffect(() => {
+    const loadSavedDocuments = () => {
+      try {
+        const storedDocuments = localStorage.getItem("documents")
+        if (storedDocuments) {
+          const documents = JSON.parse(storedDocuments)
+          // Convert saved documents to DocumentFile format
+          const convertedDocs: DocumentFile[] = documents.map((doc: any) => ({
+            id: doc.id,
+            name: doc.title + ".doc",
+            date: doc.lastModified || new Date().toLocaleDateString("id-ID", { 
+              day: "numeric", 
+              month: "short", 
+              year: "numeric" 
+            }),
+            owner: { name: "You", avatar: "YU" },
+            folderId: null,
+            content: {
+              title: doc.title,
+              author: "You",
+              lastUpdate: doc.lastModified || new Date().toLocaleDateString("id-ID", { 
+                day: "numeric", 
+                month: "long", 
+                year: "numeric" 
+              }),
+              sections: [
+                {
+                  title: "Content",
+                  content: doc.content || ""
+                }
+              ],
+              pages: 1
+            }
+          }))
+          setSavedDocuments(convertedDocs)
+        }
+      } catch (error) {
+        console.error("Error loading saved documents:", error)
+      }
+    }
+
+    loadSavedDocuments()
+    
+    // Listen for storage changes to update the list when documents are saved
+    const handleStorageChange = () => {
+      loadSavedDocuments()
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('documentsUpdated', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('documentsUpdated', handleStorageChange)
+    }
+  }, [])
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) => (prev.includes(folderId) ? prev.filter((f) => f !== folderId) : [...prev, folderId]))
@@ -193,6 +252,16 @@ export function ComposeDocumentSelection({
           {documentsData.rootFiles.length > 0 && (
             <div className="space-y-3 mb-4">
               {documentsData.rootFiles.map((file) => (
+                <FileItem key={file.id} file={file} />
+              ))}
+            </div>
+          )}
+
+          {/* Saved Documents Section */}
+          {savedDocuments.length > 0 && (
+            <div className="space-y-3 mb-4">
+              <div className="text-sm font-medium text-gray-700 mb-2">Dokumen Tersimpan</div>
+              {savedDocuments.map((file) => (
                 <FileItem key={file.id} file={file} />
               ))}
             </div>

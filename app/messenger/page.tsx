@@ -8,7 +8,7 @@ import { ActiveMessengerChannel } from "@/components/active-messenger-channel"
 import { MessengerEmptyState } from "@/components/messenger-empty-state"
 import { ParticipantSelection } from "@/components/participant-selection"
 import { ContactSelection } from "@/components/contact-selection"
-import { messengerChannelsData, onboardingChannel, type Channel, type Message } from "@/lib/messenger-data"
+import { messengerChannelsData, onboardingChannel, presidentDirectorChannel, type Channel, type Message } from "@/lib/messenger-data"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface ContactWithContext {
@@ -35,7 +35,8 @@ function MessengerPageContent() {
     onboardingMessages,
     conversationStage,
     addOnboardingMessage,
-    setConversationStage
+    setConversationStage,
+    presidentDirectorChannelTriggered
   } = useAssessmentAssistant()
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
@@ -45,6 +46,7 @@ function MessengerPageContent() {
   const [callEndProcessed, setCallEndProcessed] = useState(false)
   const [onboardingChannelAdded, setOnboardingChannelAdded] = useState(false)
   const [onboardingTriggered, setOnboardingTriggered] = useState(false)
+  const [presidentDirectorChannelAdded, setPresidentDirectorChannelAdded] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const onboardingTimeoutsRef = useRef<NodeJS.Timeout[]>([])
 
@@ -177,6 +179,47 @@ function MessengerPageContent() {
       })
     }
   }, [onboardingChannelTriggered, onboardingChannelAdded])
+
+  // Handle President Director channel triggering
+  useEffect(() => {
+    if (presidentDirectorChannelTriggered && !presidentDirectorChannelAdded) {
+      setPresidentDirectorChannelAdded(true)
+      
+      // Add the president director channel to the top of the channels list
+      setChannels((prevChannels) => {
+        // Check if president director channel already exists
+        const hasPresidentDirectorChannel = prevChannels.some(channel => channel.id === presidentDirectorChannel.id)
+        
+        if (!hasPresidentDirectorChannel) {
+          // Create the president director channel with current timestamp
+          const newPresidentDirectorChannel = {
+            ...presidentDirectorChannel,
+            messages: presidentDirectorChannel.messages.map(message => ({
+              ...message,
+              timestamp: new Date().toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              }),
+            })),
+            lastActivity: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          }
+          
+          // Auto-select the president director channel and participant
+          setSelectedChannelId(newPresidentDirectorChannel.id)
+          setSelectedParticipant(newPresidentDirectorChannel.participants.find(p => p.name === "Arya Prajida") || null)
+          
+          return [newPresidentDirectorChannel, ...prevChannels]
+        }
+        
+        return prevChannels
+      })
+    }
+  }, [presidentDirectorChannelTriggered, presidentDirectorChannelAdded])
 
   const handleChannelSelect = (channelId: string) => {
     setSelectedChannelId(channelId)
@@ -442,7 +485,7 @@ function MessengerPageContent() {
 
 1. **Download** lampiran tersebut.
 
-2. Lalu, **buka dan pelajari** isinya melalui menu **'Document'**.
+2. Lalu, **buka dan pelajari** isinya melalui menu **Document**.
 
 3. Setelah itu, **buat sebuah dokumen baru** dengan judul **'Apa yang Saya Ketahui Tentang Amboja'**. Isinya adalah rangkuman singkat pemahaman Anda tentang perusahaan kita.
 

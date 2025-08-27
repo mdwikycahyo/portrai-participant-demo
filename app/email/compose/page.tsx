@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Layout } from "@/components/layout"
 import { ComposeContactSelection } from "@/components/compose-contact-selection"
@@ -25,6 +25,7 @@ import {
 } from "lucide-react"
 import { documentsData } from "@/lib/documents-data"
 import { cn } from "@/lib/utils"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 // Type for tracking selected documents and their pages
 export type SelectedDocumentsMap = Record<string, number[]> // fileId -> array of selected page numbers
@@ -55,6 +56,7 @@ const shuffledTags = shuffleArray(allAvailableTags)
 
 export default function ComposePage() {
   const router = useRouter()
+  const { triggerEmailReplyWithAttachment } = useAssessmentAssistant()
   const [showContactSelection, setShowContactSelection] = useState(false)
   const [showDocumentSelection, setShowDocumentSelection] = useState(false)
   const [isContactAnimating, setIsContactAnimating] = useState(false)
@@ -66,6 +68,37 @@ export default function ComposePage() {
   const [subject, setSubject] = useState<string>("")
   const [message, setMessage] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [savedDocuments, setSavedDocuments] = useState<any[]>([])
+
+  // Load saved documents from localStorage
+  useEffect(() => {
+    const loadSavedDocuments = () => {
+      try {
+        const storedDocuments = localStorage.getItem("documents")
+        if (storedDocuments) {
+          const documents = JSON.parse(storedDocuments)
+          setSavedDocuments(documents)
+        }
+      } catch (error) {
+        console.error("Error loading saved documents:", error)
+      }
+    }
+
+    loadSavedDocuments()
+    
+    // Listen for storage changes
+    const handleStorageChange = () => {
+      loadSavedDocuments()
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('documentsUpdated', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('documentsUpdated', handleStorageChange)
+    }
+  }, [])
 
   const handleOpenContactSelection = () => {
     setShowContactSelection(true)
@@ -144,11 +177,31 @@ export default function ComposePage() {
     setTimeout(() => setShowDocumentSelection(false), 300)
   }
 
+  const handleSendEmail = () => {
+    // Check if this is a reply to Mia's email with attachments
+    const isMiaEmail = recipient === "mia.avira@amboja.com" || recipient === "mia@amboja.com"
+    const hasAttachments = Object.keys(attachedDocuments).length > 0
+    const isReplySubject = subject.toLowerCase().includes("re:") || 
+                          subject.toLowerCase().includes("misi pertama") ||
+                          subject.toLowerCase().includes("amboja")
+    
+    if (isMiaEmail && hasAttachments && isReplySubject) {
+      // This is a reply to Mia's email with attachments - trigger the completion flow
+      triggerEmailReplyWithAttachment()
+    }
+    
+    // Simulate email sending
+    alert(`Email berhasil dikirim ke ${recipient}!`)
+    
+    // Navigate back to email list
+    router.push("/email")
+  }
+
   // Calculate total selected pages
   const totalSelectedPages = Object.values(selectedDocuments).reduce((sum, pages) => sum + pages.length, 0)
   const totalAttachedPages = Object.values(attachedDocuments).reduce((sum, pages) => sum + pages.length, 0)
 
-  // Get file details for attached documents (updated to handle root files)
+  // Get file details for attached documents (updated to handle root files and saved documents)
   const getFileDetails = (fileId: string) => {
     // Check in folders first
     for (const folder of documentsData.folders) {
@@ -158,6 +211,39 @@ export default function ComposePage() {
     // Check in root files
     const rootFile = documentsData.rootFiles.find((f) => f.id === fileId)
     if (rootFile) return rootFile
+
+    // Check in saved documents
+    const savedDoc = savedDocuments.find((doc) => doc.id === fileId)
+    if (savedDoc) {
+      // Convert saved document to DocumentFile format
+      return {
+        id: savedDoc.id,
+        name: savedDoc.title + ".doc",
+        date: savedDoc.lastModified || new Date().toLocaleDateString("id-ID", { 
+          day: "numeric", 
+          month: "short", 
+          year: "numeric" 
+        }),
+        owner: { name: "You", avatar: "YU" },
+        folderId: null,
+        content: {
+          title: savedDoc.title,
+          author: "You",
+          lastUpdate: savedDoc.lastModified || new Date().toLocaleDateString("id-ID", { 
+            day: "numeric", 
+            month: "long", 
+            year: "numeric" 
+          }),
+          sections: [
+            {
+              title: "Content",
+              content: savedDoc.content || ""
+            }
+          ],
+          pages: 1
+        }
+      }
+    }
 
     return null
   }
@@ -327,7 +413,11 @@ export default function ComposePage() {
                 <Button variant="outline" disabled>
                   Simpan sebagai Draft
                 </Button>
-                <Button className="bg-gray-800 hover:bg-gray-700 text-white" disabled={isSendButtonDisabled}>
+                <Button 
+                  className="bg-gray-800 hover:bg-gray-700 text-white" 
+                  disabled={isSendButtonDisabled}
+                  onClick={handleSendEmail}
+                >
                   Kirim
                 </Button>
               </div>

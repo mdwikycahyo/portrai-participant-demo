@@ -37,6 +37,28 @@ const botResponses = {
   chat: "Di halaman Chat, Anda dapat berkomunikasi dengan rekan kerja. Pilih kontak dari daftar untuk memulai percakapan.",
   call: "Di halaman Call, Anda dapat melakukan panggilan suara dengan rekan kerja. Pilih kontak untuk memulai panggilan atau lihat riwayat panggilan sebelumnya.",
   help: "Saya dapat membantu Anda dengan navigasi, penggunaan email, manajemen dokumen, fitur chat, dan fitur panggilan. Apa yang ingin Anda ketahui?",
+  companyProfile: `Berikut adalah rangkuman dokumen "Profil Perusahaan Amboja":
+
+**Tentang Amboja:**
+Amboja adalah perusahaan teknologi yang berfokus pada pengembangan solusi digital inovatif untuk berbagai industri. Didirikan pada tahun 2018, perusahaan telah berkembang menjadi salah satu pemain utama dalam ekosistem teknologi Indonesia.
+
+**Visi:**
+Menjadi perusahaan teknologi terdepan yang memberikan dampak positif bagi masyarakat melalui inovasi berkelanjutan.
+
+**Misi:**
+- Pengembangan produk teknologi yang user-friendly
+- Pemberdayaan talenta lokal
+- Kontribusi terhadap transformasi digital Indonesia
+
+**Nilai-nilai Perusahaan:**
+- Inovasi
+- Kolaborasi
+- Integritas
+- Keberlanjutan
+- Kepedulian terhadap Pelanggan
+
+**Budaya Kerja:**
+Amboja menerapkan prinsip work-life balance, mendorong kreativitas dan inovasi, serta membangun lingkungan kerja yang inklusif dan supportif. Tim terdiri dari profesional muda yang passionate dan berpengalaman dari berbagai latar belakang. Perusahaan berkomitmen untuk terus mengembangkan kemampuan karyawan melalui program pelatihan, mentoring, dan kesempatan berkontribusi dalam proyek-proyek menantang.`,
 }
 
 const tutorialMessages = [
@@ -64,7 +86,8 @@ interface AssessmentAssistantContextType {
   emailRead: boolean
   downloadedDocuments: DocumentFile[]
   onboardingMessages: any[]
-  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase'
+  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion'
+  presidentDirectorChannelTriggered: boolean
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -81,8 +104,10 @@ interface AssessmentAssistantContextType {
   markEmailAsRead: () => void
   addDownloadedDocument: (document: DocumentFile) => void
   addOnboardingMessage: (message: any) => void
-  setConversationStage: (stage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase') => void
+  setConversationStage: (stage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion') => void
   resetTutorialProgress: () => void
+  triggerEmailReplyWithAttachment: () => void
+  triggerPresidentDirectorChannel: () => void
 }
 
 const AssessmentAssistantContext = createContext<AssessmentAssistantContextType | undefined>(undefined)
@@ -101,7 +126,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [emailRead, setEmailRead] = useState(false)
   const [downloadedDocuments, setDownloadedDocuments] = useState<DocumentFile[]>([])
   const [onboardingMessages, setOnboardingMessages] = useState(onboardingChannel.messages)
-  const [conversationStage, setConversationStage] = useState<'initial' | 'waiting_for_response' | 'responded' | 'mission_phase'>('initial')
+  const [conversationStage, setConversationStage] = useState<'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion'>('initial')
+  const [presidentDirectorChannelTriggered, setPresidentDirectorChannelTriggered] = useState(false)
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -162,7 +188,26 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const getBotResponse = useCallback((userMessage: string): string => {
     const message = userMessage.toLowerCase()
 
-    if (message.includes("halo") || message.includes("hai") || message.includes("hello")) {
+    // Check for company profile queries first (more specific)
+    if (
+      message.includes("rangkum") && 
+      (message.includes("profil perusahaan") || message.includes("amboja") || message.includes("company profile"))
+    ) {
+      return botResponses.companyProfile
+    } else if (
+      message.includes("profil perusahaan") || 
+      (message.includes("amboja") && !message.includes("branding")) || 
+      message.includes("company profile") ||
+      message.includes("tentang amboja") ||
+      message.includes("visi misi") ||
+      message.includes("budaya kerja") ||
+      message.includes("nilai perusahaan") ||
+      message.includes("sejarah amboja") ||
+      message.includes("kapan didirikan") ||
+      message.includes("apa itu amboja")
+    ) {
+      return botResponses.companyProfile
+    } else if (message.includes("halo") || message.includes("hai") || message.includes("hello")) {
       return botResponses.greeting
     } else if (message.includes("navigasi") || message.includes("menu") || message.includes("sidebar")) {
       return botResponses.navigation
@@ -332,6 +377,53 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setOnboardingMessages(prev => [...prev, message])
   }, [])
 
+  const triggerPresidentDirectorChannel = useCallback(() => {
+    setPresidentDirectorChannelTriggered(true)
+  }, [])
+
+  const triggerEmailReplyWithAttachment = useCallback(() => {
+    setConversationStage('email_replied')
+    
+    // Mia's completion messages
+    const completionMessages = [
+      "Halo Bapak Dwiky Cahyo, email dan dokumen rangkuman Anda sudah saya terima. Terima kasih banyak, misi pertama Anda selesai dengan sangat baik!",
+      "Proses onboarding dari saya untuk sementara selesai.",
+      "Sepertinya rangkuman Anda menarik perhatian salah satu pimpinan kita.",
+      "Setelah ini, President Director kita, Arya Prajida, akan segera menyapa Anda melalui fitur Chat ini untuk berdiskusi singkat dengan Anda."
+    ]
+
+    // Send messages with proper timing
+    completionMessages.forEach((messageText, index) => {
+      setTimeout(() => {
+        const message = {
+          id: `mia-completion-${Date.now()}-${index}`,
+          content: messageText,
+          senderName: "Mia Avira",
+          senderAvatar: "MA",
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          isUser: false,
+        }
+        
+        addOnboardingMessage(message)
+        
+        // After the last message, set stage to completion and trigger president director
+        if (index === completionMessages.length - 1) {
+          setTimeout(() => {
+            setConversationStage('mia_completion')
+            // Trigger President Director introduction after a delay
+            setTimeout(() => {
+              setPresidentDirectorChannelTriggered(true)
+            }, 3000) // 3 seconds after completion
+          }, 1000)
+        }
+      }, (index + 1) * 3000) // 3 seconds between each message
+    })
+  }, [addOnboardingMessage])
+
   const resetTutorialProgress = useCallback(() => {
     setMessages(initialMessages)
     setIsTutorialActive(false)
@@ -345,6 +437,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setDownloadedDocuments([])
     setOnboardingMessages(onboardingChannel.messages)
     setConversationStage('initial')
+    setPresidentDirectorChannelTriggered(false)
     setHasNewMessage(false)
   }, [])
 
@@ -363,6 +456,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     downloadedDocuments,
     onboardingMessages,
     conversationStage,
+    presidentDirectorChannelTriggered,
     addMessage,
     addUserMessage,
     addBotResponse,
@@ -381,6 +475,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     addOnboardingMessage,
     setConversationStage,
     resetTutorialProgress,
+    triggerEmailReplyWithAttachment,
+    triggerPresidentDirectorChannel,
   }
 
   return (

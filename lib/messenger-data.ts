@@ -22,6 +22,45 @@ export interface Channel {
   lastActivity: string
 }
 
+// President Director Channel - This will be dynamically added after Mia completion
+export const presidentDirectorChannel: Channel = {
+  id: "president-director-channel",
+  name: "Discussion with President Director",
+  participants: [
+    {
+      name: "You",
+      avatar: "Y",
+      role: "New Employee",
+      email: "you@company.com",
+    },
+    {
+      name: "Arya Prajida",
+      avatar: "AP",
+      role: "President Director",
+      email: "arya.prajida@amboja.com",
+    },
+  ],
+  messages: [
+    {
+      id: "president-intro-1",
+      senderName: "Arya Prajida",
+      senderAvatar: "AP",
+      content: "Halo Bapak Dwiky Cahyo, saya Arya Prajida, President Director Amboja.",
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      isUser: false,
+    },
+  ],
+  lastActivity: new Date().toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }),
+}
+
 // HR Onboarding Channel - This will be dynamically added when triggered
 export const onboardingChannel: Channel = {
   id: "onboarding-channel",
