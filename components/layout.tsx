@@ -8,6 +8,7 @@ import { UserProfileDropdown } from "./user-profile-dropdown"
 import { AssessmentAssistant, AssessmentAssistantButton } from "./assessment-assistant"
 import { WorkHourBanner } from "./work-hour-banner"
 import { AssessmentReminderBanner } from "./assessment-reminder-banner"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 // Removed Switch and Label imports as they are now in UserProfileDropdown
 // import { Switch } from "@/components/ui/switch"
 // import { Label } from "@/components/ui/label"
@@ -18,29 +19,19 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const router = useRouter()
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false) // Default to closed
+  const {
+    isOpen: isAssistantOpen,
+    setIsOpen: setIsAssistantOpen,
+    hasNewMessage: hasNewAiAssistantMessage,
+    setHasNewMessage: setHasNewAiAssistantMessage,
+    addReminderMessage,
+  } = useAssessmentAssistant()
+  
   const [showWorkHourBanner, setShowWorkHourBanner] = useState(false) // Default to hidden
   const [showAssessmentReminderBanner, setShowAssessmentReminderBanner] = useState(false) // Default to hidden
-  const [hasNewAiAssistantMessage, setHasNewAiAssistantMessage] = useState(false) // State for the red dot
   const [aiAssistantTriggerMessage, setAiAssistantTriggerMessage] = useState<{ text: string; type: "reminder" } | null>(
     null,
   ) // State for AI Assistant messages
-
-  // Persist assistant open state
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("assessment-assistant-open")
-      if (saved === "true") {
-        setIsAssistantOpen(true)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("assessment-assistant-open", isAssistantOpen.toString())
-    }
-  }, [isAssistantOpen])
 
   // Persist work hour banner state
   useEffect(() => {
@@ -74,31 +65,15 @@ export function Layout({ children }: LayoutProps) {
     }
   }, [showAssessmentReminderBanner])
 
-  // Persist new AI Assistant message indicator state
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("ai-assistant-new-message-indicator")
-      if (saved === "true") {
-        setHasNewAiAssistantMessage(true)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("ai-assistant-new-message-indicator", hasNewAiAssistantMessage.toString())
-    }
-  }, [hasNewAiAssistantMessage])
-
   // Callback for AssessmentAssistant to notify Layout about new messages
   const handleNewAiAssistantMessage = useCallback(() => {
     setHasNewAiAssistantMessage(true)
-  }, [])
+  }, [setHasNewAiAssistantMessage])
 
   // Callback for AssessmentAssistant to notify Layout when chat is opened
   const handleAiAssistantChatOpened = useCallback(() => {
     setHasNewAiAssistantMessage(false)
-  }, [])
+  }, [setHasNewAiAssistantMessage])
 
   // Effect to clear aiAssistantTriggerMessage after it's been "sent"
   useEffect(() => {

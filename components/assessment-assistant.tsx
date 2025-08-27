@@ -3,43 +3,10 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { Bot, X, Send, Bell } from "lucide-react"
+import { Bot, X, Send, Bell, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-
-interface Message {
-  id: string
-  text: string
-  isBot: boolean
-  type: "user" | "bot" | "reminder"
-  timestamp: string
-}
-
-const initialMessages: Message[] = [
-  {
-    id: "1",
-    text: "Ada yang bisa saya bantu?",
-    isBot: true,
-    type: "bot",
-    timestamp: new Date().toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }),
-  },
-]
-
-const botResponses = {
-  default: "Maaf, saya belum memahami pertanyaan Anda. Bisakah Anda menjelaskan lebih detail?",
-  greeting: "Halo! Saya Assessment Assistant. Saya di sini untuk membantu Anda menggunakan platform ini.",
-  navigation: "Anda dapat menggunakan sidebar di sebelah kiri untuk navigasi ke Beranda, Chat, Email, atau Documents.",
-  email:
-    "Di halaman Email, Anda dapat membaca, membalas, dan meneruskan email. Gunakan tombol Tulis untuk menulis email baru.",
-  documents:
-    "Di halaman Documents, Anda dapat melihat folder dan file. Klik folder untuk melihat isinya, atau klik file untuk membacanya.",
-  chat: "Di halaman Chat, Anda dapat berkomunikasi dengan rekan kerja. Pilih kontak dari daftar untuk memulai percakapan.",
-  help: "Saya dapat membantu Anda dengan navigasi, penggunaan email, manajemen dokumen, dan fitur chat. Apa yang ingin Anda ketahui?",
-}
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface AssessmentAssistantProps {
   isOpen: boolean
@@ -56,13 +23,20 @@ export function AssessmentAssistant({
   onNewMessageReceived,
   onChatOpened,
 }: AssessmentAssistantProps) {
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("assessment-assistant-messages")
-      return saved ? JSON.parse(saved) : initialMessages
-    }
-    return initialMessages
-  })
+  const {
+    messages,
+    addUserMessage,
+    addBotResponse,
+    addReminderMessage,
+    setHasNewMessage,
+    isTutorialActive,
+    tutorialStep,
+    isTyping,
+    conversationPhase,
+    handleTutorialResponse,
+    resetTutorialProgress,
+  } = useAssessmentAssistant()
+  
   const [inputValue, setInputValue] = useState("")
   
   // Create a ref for the messages container
@@ -96,33 +70,22 @@ export function AssessmentAssistant({
     }
   }, [messages, isOpen])
 
-  // Persist messages to localStorage
+  // Scroll to bottom when typing animation starts
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("assessment-assistant-messages", JSON.stringify(messages))
+    if (isOpen && isTyping) {
+      scrollToBottom()
     }
-  }, [messages])
+  }, [isTyping, isOpen])
 
   // Handle external messages (from Layout, e.g., banner triggers)
   useEffect(() => {
     if (externalMessage && externalMessage.text) {
-      const reminderMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        text: externalMessage.text,
-        isBot: true,
-        type: externalMessage.type,
-        timestamp: new Date().toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        }),
-      }
-      setMessages((prev) => [...prev, reminderMessage])
+      addReminderMessage(externalMessage.text)
       if (onNewMessageReceived) {
         onNewMessageReceived()
       }
     }
-  }, [externalMessage, onNewMessageReceived])
+  }, [externalMessage, onNewMessageReceived, addReminderMessage])
 
   // Notify parent when chat is opened
   useEffect(() => {
@@ -131,62 +94,28 @@ export function AssessmentAssistant({
     }
   }, [isOpen, onChatOpened])
 
-  const getBotResponse = (userMessage: string): string => {
-    const message = userMessage.toLowerCase()
-
-    if (message.includes("halo") || message.includes("hai") || message.includes("hello")) {
-      return botResponses.greeting
-    } else if (message.includes("navigasi") || message.includes("menu") || message.includes("sidebar")) {
-      return botResponses.navigation
-    } else if (message.includes("email") || message.includes("surat")) {
-      return botResponses.email
-    } else if (message.includes("dokumen") || message.includes("file") || message.includes("folder")) {
-      return botResponses.documents
-    } else if (message.includes("chat") || message.includes("pesan")) {
-      return botResponses.chat
-    } else if (message.includes("bantuan") || message.includes("help") || message.includes("tolong")) {
-      return botResponses.help
-    } else {
-      return botResponses.default
-    }
-  }
-
   const handleSendMessage = () => {
     if (!inputValue.trim()) return
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputValue,
-      isBot: false,
-      type: "user",
-      timestamp: new Date().toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      }),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
+    addUserMessage(inputValue)
+    const currentInput = inputValue
     setInputValue("")
 
-    // Simulate bot response delay
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: getBotResponse(inputValue),
-        isBot: true,
-        type: "bot",
-        timestamp: new Date().toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        }),
-      }
-      setMessages((prev) => [...prev, botMessage])
-      if (onNewMessageReceived) {
-        onNewMessageReceived()
-      }
-    }, 1000)
+    // Check if we're in a tutorial phase that expects user response
+    if ((conversationPhase === 'readiness_check' || conversationPhase === 'clarity_check') && !isTutorialActive) {
+      handleTutorialResponse(currentInput)
+      return
+    }
+
+    // Normal bot response (for non-tutorial interactions)
+    if (conversationPhase === 'completion' || conversationPhase === 'initial') {
+      setTimeout(() => {
+        addBotResponse(currentInput)
+        if (onNewMessageReceived) {
+          onNewMessageReceived()
+        }
+      }, 1000)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -209,17 +138,21 @@ export function AssessmentAssistant({
           <Button
             variant="ghost"
             size="sm"
+            onClick={resetTutorialProgress}
+            className="p-1 h-6 w-6 text-gray-300 hover:text-white hover:bg-gray-600"
+            title="Reset Tutorial Progress"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onToggle}
             className="p-1 h-6 w-6 text-gray-300 hover:text-white hover:bg-gray-600"
           >
             <X className="w-4 h-4" />
           </Button>
         </div>
-      </div>
-
-      {/* Coming Soon Banner */}
-      <div className="p-3 bg-gray-700 text-gray-300 text-center text-xs font-medium border-b border-gray-600">
-        Fitur ini belum termasuk dalam August Deliverable (Coming Soon!)
       </div>
 
       {/* Messages */}
@@ -247,7 +180,7 @@ export function AssessmentAssistant({
                     ? "bg-blue-500 text-white"
                     : message.type === "reminder"
                       ? "bg-indigo-800 text-white"
-                      : "bg-gray-700 text-gray-100"
+                      : "bg-green-800 text-white"
                 }`}
               >
                 <p className="text-sm">{message.text}</p>
@@ -256,6 +189,26 @@ export function AssessmentAssistant({
             </div>
           </div>
         ))}
+        
+        {/* Typing indicator */}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%]">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-gray-300" />
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-gray-700 text-gray-100">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Invisible element to scroll to */}
         <div ref={messagesEndRef} />
       </div>
@@ -267,10 +220,24 @@ export function AssessmentAssistant({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ketik pesan Anda..."
-            className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500"
+            placeholder={
+              isTutorialActive || isTyping 
+                ? "Mohon tunggu..." 
+                : conversationPhase === 'readiness_check' 
+                  ? "Ketik jawaban Anda (Ya/Tidak)..."
+                  : conversationPhase === 'clarity_check'
+                    ? "Ketik jawaban Anda (Ya, jelas/Tidak)..."
+                    : "Ketik pesan atau ketik 'Help'..."
+            }
+            disabled={isTutorialActive || isTyping}
+            className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          <Button onClick={handleSendMessage} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white p-2">
+          <Button 
+            onClick={handleSendMessage} 
+            size="sm" 
+            disabled={isTutorialActive || isTyping}
+            className="bg-blue-600 hover:bg-blue-700 text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Send className="w-4 h-4" />
           </Button>
         </div>

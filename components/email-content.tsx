@@ -26,6 +26,50 @@ interface EmailContentProps {
 }
 
 const emailData = {
+  "first-mission": {
+    sender: "Mia Avira",
+    email: "mia.avira@company.com",
+    subject: "Misi Pertama Anda di Amboja",
+    date: "Hari ini, 12:30 PM",
+    recipients: [
+      "dwiky.cahyo@company.com",
+    ],
+    content: `Halo Bapak Dwiky Cahyo,
+
+Selamat datang di Amboja! Kami sangat senang Anda bergabung dengan tim kami.
+
+Sebagai bagian dari proses onboarding, kami telah menyiapkan misi pertama yang akan membantu Anda terbiasa dengan alur kerja dan platform yang digunakan di Amboja.
+
+**MISI PERTAMA: EKSPLORASI PLATFORM**
+
+Tugas Anda adalah:
+
+1. **Eksplorasi Fitur Email**: Cobalah untuk membalas email ini dan kirimkan konfirmasi bahwa Anda telah menerima misi ini.
+
+2. **Jelajahi Documents**: Buka halaman Documents dan lihat folder "Onboarding Materials". Di dalamnya terdapat panduan lengkap tentang budaya kerja dan prosedur operasional Amboja.
+
+3. **Coba Fitur Chat**: Kembali ke fitur Messenger dan beritahu saya melalui chat bahwa Anda telah membaca email ini dan siap untuk memulai tugas-tugas berikutnya.
+
+4. **Familiarisasi dengan Call System**: Pada saat yang tepat, tim akan mengundang Anda untuk bergabung dalam panggilan tim untuk perkenalan lebih lanjut.
+
+**Catatan Penting:**
+- Tidak ada deadline yang ketat untuk misi ini, tetapi usahakan untuk menyelesaikannya dalam 1-2 hari ke depan
+- Jika ada pertanyaan atau kendala, jangan ragu untuk menghubungi saya melalui chat atau email
+- Misi ini dirancang untuk membantu Anda beradaptasi dengan lingkungan kerja digital di Amboja
+
+Sekali lagi, selamat datang di keluarga besar Amboja. Kami menantikan kontribusi dan kolaborasi Anda!
+
+Salam hangat,
+
+Mia Avira  
+VP of Human Resources  
+Amboja Technology`,
+    attachments: [
+      "Employee Handbook - Amboja 2024.pdf",
+      "Platform User Guide.pdf", 
+      "Emergency Contacts & Procedures.pdf",
+    ],
+  },
   "ux-researcher": {
     sender: "Dwiky Cahyo",
     email: "ux.researcher@email.com",
@@ -79,14 +123,14 @@ export function EmailContent({ emailId }: EmailContentProps) {
         {/* Added bg-white, rounded, shadow, and margin-bottom */}
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">Kick-off Discussion</h1>
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">{email.subject}</h1>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
-                DC
+                {emailId === "first-mission" ? "MA" : "DC"}
               </div>
               <div>
-                <p className="font-medium text-gray-900">Dwiky Cahyo</p>
-                <p className="text-sm text-gray-600">&lt;Dwiky.wick@email.com&gt;</p>
+                <p className="font-medium text-gray-900">{email.sender}</p>
+                <p className="text-sm text-gray-600">&lt;{email.email}&gt;</p>
               </div>
             </div>
           </div>

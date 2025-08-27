@@ -107,26 +107,26 @@ export default function ChatPage() {
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-120px)] flex relative px-6 pb-6">
-        <ChatList
-          chats={chats}
-          selectedChat={selectedChat}
-          onChatSelect={handleChatSelect}
-          onAddNewChat={handleAddNewChat}
-        />
+        <div className="h-[calc(100vh-120px)] flex relative px-6 pb-6">
+          <ChatList
+            chats={chats}
+            selectedChat={selectedChat}
+            onChatSelect={handleChatSelect}
+            onAddNewChat={handleAddNewChat}
+          />
 
-        <div className="flex-1 flex flex-col">
-          {/* Main Content */}
-          {showContactSelection && (
-            <ContactSelection onClose={handleSelectAndCloseContactSelection} isAnimating={isContactAnimating} />
-          )}
-          {!showContactSelection && selectedChat ? (
-            <ActiveChat chatId={selectedChat} chats={chats} /> // Pass the chats array
-          ) : (
-            !showContactSelection && <ChatEmptyState />
-          )}
+          <div className="flex-1 flex flex-col">
+            {/* Main Content */}
+            {showContactSelection && (
+              <ContactSelection onClose={handleSelectAndCloseContactSelection} isAnimating={isContactAnimating} />
+            )}
+            {!showContactSelection && selectedChat ? (
+              <ActiveChat chatId={selectedChat} chats={chats} /> // Pass the chats array
+            ) : (
+              !showContactSelection && <ChatEmptyState />
+            )}
+          </div>
         </div>
-      </div>
-    </Layout>
+      </Layout>
   )
 }

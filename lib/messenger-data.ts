@@ -22,6 +22,45 @@ export interface Channel {
   lastActivity: string
 }
 
+// HR Onboarding Channel - This will be dynamically added when triggered
+export const onboardingChannel: Channel = {
+  id: "onboarding-channel",
+  name: "Onboarding",
+  participants: [
+    {
+      name: "You",
+      avatar: "Y",
+      role: "New Employee",
+      email: "you@company.com",
+    },
+    {
+      name: "Mia Avira",
+      avatar: "MA",
+      role: "VP of Human Resource",
+      email: "mia.avira@company.com",
+    },
+  ],
+  messages: [
+    {
+      id: "onboarding-1",
+      senderName: "Mia Avira",
+      senderAvatar: "MA",
+      content: "Halo Bapak Dwiky Cahyo, perkenalkan saya Mia Avira, VP of Human Resources di Amboja.",
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      isUser: false,
+    },
+  ],
+  lastActivity: new Date().toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }),
+}
+
 export const messengerChannelsData: Channel[] = [
   {
     id: "1",
