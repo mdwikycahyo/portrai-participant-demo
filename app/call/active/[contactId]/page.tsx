@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Layout } from "@/components/layout"
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
 
 // Mock contact data with Ezra Kaell as contactId "1"
 const contactData = {
@@ -198,8 +197,7 @@ export default function ActiveCallPage() {
   const currentDisplayText = currentMessage ? currentMessage.text.slice(0, currentCharIndex) : ""
 
   return (
-    <AssessmentAssistantProvider>
-      <Layout>
+    <Layout>
         <div className="h-[calc(100vh-120px)] flex -mt-8 px-6 pb-6">
           <div className="flex-1 flex flex-col">
             {/* Header */}
@@ -303,7 +301,6 @@ export default function ActiveCallPage() {
             </div>
           </div>
         </div>
-      </Layout>
-    </AssessmentAssistantProvider>
+    </Layout>
   )
 }

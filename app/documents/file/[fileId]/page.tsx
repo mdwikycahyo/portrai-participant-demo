@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import { Layout } from "@/components/layout"
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
 import { documentsData } from "@/lib/documents-data"
 import { Button } from "@/components/ui/button"
 
@@ -31,8 +30,7 @@ export default function DocumentPage() {
   const hasMultiplePages = file.content.pages && file.content.pages > 1
 
   return (
-    <AssessmentAssistantProvider>
-      <Layout>
+    <Layout>
         <div className="px-6 pb-6">
           {/* Document Content */}
           <div className="max-w-4xl mx-auto">
@@ -87,6 +85,5 @@ export default function DocumentPage() {
           </div>
         </div>
       </Layout>
-    </AssessmentAssistantProvider>
   )
 }

@@ -11,7 +11,6 @@ import { PlatformTab } from "./components/PlatformTab";
 import { useDeviceChecking } from "./hooks/useDeviceChecking";
 import { useTimer } from "./hooks/useTimer";
 import { useScrollDetection } from "./hooks/useScrollDetection";
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context";
 
 export default function CheckInPage() {
   const router = useRouter();
@@ -77,7 +76,6 @@ export default function CheckInPage() {
   };
 
   return (
-    <AssessmentAssistantProvider>
       <div className="flex flex-col h-screen mx-auto px-6 py-6 bg-gray-50">
         <CheckInHeader
           timeLeft={timeLeft}
@@ -99,6 +97,5 @@ export default function CheckInPage() {
           {renderTabContent()}
         </main>
       </div>
-    </AssessmentAssistantProvider>
   );
 }

@@ -3,6 +3,7 @@
 import { Hash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Channel } from "@/lib/messenger-data"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface MessengerChannelListProps {
   channels: Channel[]
@@ -17,6 +18,8 @@ export function MessengerChannelList({
   onChannelSelect,
   onAddNewChannel,
 }: MessengerChannelListProps) {
+  const { onboardingChannelTriggered, hasInteractedWithMia } = useAssessmentAssistant()
+  
   return (
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
       {/* Header */}
@@ -34,7 +37,7 @@ export function MessengerChannelList({
             <div
               key={channel.id}
               onClick={() => onChannelSelect(channel.id)}
-              className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+              className={`relative flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                 selectedChannelId === channel.id ? "bg-gray-100 border border-gray-300" : "hover:bg-gray-50"
               }`}
             >
@@ -42,7 +45,12 @@ export function MessengerChannelList({
                 <Hash className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-900 truncate">{channel.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium text-gray-900 truncate">{channel.name}</h3>
+                  {channel.id === "onboarding-channel" && onboardingChannelTriggered && !hasInteractedWithMia && (
+                    <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
+                  )}
+                </div>
               </div>
             </div>
           ))}

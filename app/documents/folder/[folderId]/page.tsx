@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Folder, FileText } from "lucide-react"
 import { Layout } from "@/components/layout"
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
 import { documentsData } from "@/lib/documents-data"
 import { Button } from "@/components/ui/button"
 
@@ -30,8 +29,7 @@ export default function FolderPage() {
   }
 
   return (
-    <AssessmentAssistantProvider>
-      <Layout>
+    <Layout>
         <div className="px-6 pb-6">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
@@ -82,6 +80,5 @@ export default function FolderPage() {
           </div>
         </div>
       </Layout>
-    </AssessmentAssistantProvider>
   )
 }

@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Layout } from "@/components/layout"
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
 import { EmailSidebar } from "@/components/email-sidebar"
 import { EmailList } from "@/components/email-list"
 import { EmailEmptyState } from "@/components/email-empty-state"
@@ -22,17 +21,15 @@ export default function EmailPage() {
   }
 
   return (
-    <AssessmentAssistantProvider>
-      <Layout>
-        <div className="h-[calc(100vh-120px)] flex px-6 pb-6">
-          <EmailSidebar activeTab={activeTab} onTabChange={handleTabChange} />
+    <Layout>
+      <div className="h-[calc(100vh-120px)] flex px-6 pb-6">
+        <EmailSidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
-          <div className="flex-1 flex">
-            <EmailList selectedEmail={selectedEmail} onEmailSelect={handleEmailSelect} activeTab={activeTab} />
-            <div className="flex-1">{selectedEmail ? <EmailContent emailId={selectedEmail} /> : <EmailEmptyState />}</div>
-          </div>
+        <div className="flex-1 flex">
+          <EmailList selectedEmail={selectedEmail} onEmailSelect={handleEmailSelect} activeTab={activeTab} />
+          <div className="flex-1">{selectedEmail ? <EmailContent emailId={selectedEmail} /> : <EmailEmptyState />}</div>
         </div>
-      </Layout>
-    </AssessmentAssistantProvider>
+      </div>
+    </Layout>
   )
 }

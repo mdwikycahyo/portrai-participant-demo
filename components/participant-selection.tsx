@@ -1,6 +1,7 @@
 "use client"
 
 import type { Channel } from "@/lib/messenger-data"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 type Participant = {
   name: string
@@ -16,11 +17,20 @@ interface ParticipantSelectionProps {
 }
 
 export function ParticipantSelection({ channel, selectedParticipant, onSelectParticipant }: ParticipantSelectionProps) {
+  const { onboardingChannelTriggered, hasInteractedWithMia } = useAssessmentAssistant()
+  
   // Static timestamps for participants as shown in the design
   const participantTimestamps = ["11:30 AM", "09:00 AM", "08:45 AM", "02:30 PM", "10:15 AM"]
 
   // Filter out "You" from the participant list
   const filteredParticipants = channel.participants.filter((participant) => participant.name !== "You")
+  
+  // Check if this is Mia Avira in the onboarding channel and user hasn't interacted yet
+  const isMiaInOnboarding = (participant: Participant) => 
+    channel.id === "onboarding-channel" && 
+    participant.name === "Mia Avira" && 
+    onboardingChannelTriggered &&
+    !hasInteractedWithMia
 
   return (
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
@@ -42,7 +52,12 @@ export function ParticipantSelection({ channel, selectedParticipant, onSelectPar
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-medium text-gray-900">{participant.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium text-gray-900">{participant.name}</h3>
+                    {isMiaInOnboarding(participant) && (
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    )}
+                  </div>
                   <span className="text-sm text-gray-500">
                     {participantTimestamps[index % participantTimestamps.length]}
                   </span>

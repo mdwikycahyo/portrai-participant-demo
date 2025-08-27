@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { Bot, X, Send, Bell } from "lucide-react"
+import { Bot, X, Send, Bell, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
@@ -34,6 +34,7 @@ export function AssessmentAssistant({
     isTyping,
     conversationPhase,
     handleTutorialResponse,
+    resetTutorialProgress,
   } = useAssessmentAssistant()
   
   const [inputValue, setInputValue] = useState("")
@@ -134,6 +135,15 @@ export function AssessmentAssistant({
           <span className="font-medium text-white">Assessment Assistant</span>
         </div>
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetTutorialProgress}
+            className="p-1 h-6 w-6 text-gray-300 hover:text-white hover:bg-gray-600"
+            title="Reset Tutorial Progress"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"

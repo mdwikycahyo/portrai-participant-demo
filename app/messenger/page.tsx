@@ -8,8 +8,8 @@ import { ActiveMessengerChannel } from "@/components/active-messenger-channel"
 import { MessengerEmptyState } from "@/components/messenger-empty-state"
 import { ParticipantSelection } from "@/components/participant-selection"
 import { ContactSelection } from "@/components/contact-selection"
-import { messengerChannelsData, type Channel } from "@/lib/messenger-data"
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
+import { messengerChannelsData, onboardingChannel, type Channel } from "@/lib/messenger-data"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface ContactWithContext {
   name: string
@@ -26,14 +26,16 @@ type Participant = {
   email: string
 }
 
-export default function MessengerPage() {
+function MessengerPageContent() {
   const searchParams = useSearchParams()
+  const { onboardingChannelTriggered } = useAssessmentAssistant()
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
   const [channels, setChannels] = useState<Channel[]>(messengerChannelsData)
   const [showContactSelection, setShowContactSelection] = useState(false)
   const [isContactAnimating, setIsContactAnimating] = useState(false)
   const [callEndProcessed, setCallEndProcessed] = useState(false)
+  const [onboardingChannelAdded, setOnboardingChannelAdded] = useState(false)
 
   // Handle call end redirect
   useEffect(() => {
@@ -102,6 +104,64 @@ export default function MessengerPage() {
       // This allows the URL parameters to remain when the page is loaded directly
     }
   }, [searchParams, callEndProcessed]) // Removed channels from dependency array
+
+  // Handle onboarding channel removal when tutorial is reset
+  useEffect(() => {
+    if (!onboardingChannelTriggered && onboardingChannelAdded) {
+      // Remove the onboarding channel when tutorial is reset
+      setChannels((prevChannels) => prevChannels.filter(channel => channel.id !== onboardingChannel.id))
+      setOnboardingChannelAdded(false)
+      // Reset selected channel if it was the onboarding channel
+      if (selectedChannelId === onboardingChannel.id) {
+        setSelectedChannelId(null)
+        setSelectedParticipant(null)
+      }
+    }
+  }, [onboardingChannelTriggered, onboardingChannelAdded, selectedChannelId])
+
+  // Handle onboarding channel creation
+  useEffect(() => {
+    if (onboardingChannelTriggered && !onboardingChannelAdded) {
+      setOnboardingChannelAdded(true)
+      
+      // Add the onboarding channel to the top of the channels list
+      setChannels((prevChannels) => {
+        // Check if onboarding channel already exists
+        const hasOnboardingChannel = prevChannels.some(channel => channel.id === onboardingChannel.id)
+        
+        if (!hasOnboardingChannel) {
+          // Create a new onboarding channel with fresh timestamps
+          const newOnboardingChannel = {
+            ...onboardingChannel,
+            messages: onboardingChannel.messages.map((message, index) => {
+              const currentTime = new Date()
+              currentTime.setSeconds(currentTime.getSeconds() + index * 30) // Stagger messages by 30 seconds
+              
+              return {
+                ...message,
+                timestamp: currentTime.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                }),
+              }
+            }),
+            lastActivity: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          }
+          
+          // Don't auto-select the channel - let user discover it
+          
+          return [newOnboardingChannel, ...prevChannels]
+        }
+        
+        return prevChannels
+      })
+    }
+  }, [onboardingChannelTriggered, onboardingChannelAdded])
 
   const handleChannelSelect = (channelId: string) => {
     setSelectedChannelId(channelId)
@@ -193,8 +253,7 @@ export default function MessengerPage() {
   const selectedChannel = channels.find((channel) => channel.id === selectedChannelId)
 
   return (
-    <AssessmentAssistantProvider>
-      <Layout>
+    <Layout>
         <div className="h-[calc(100vh-120px)] flex px-6 pb-6">
           {/* Left Panel: Channel List */}
           <MessengerChannelList
@@ -248,6 +307,9 @@ export default function MessengerPage() {
           )}
         </div>
       </Layout>
-    </AssessmentAssistantProvider>
   )
+}
+
+export default function MessengerPage() {
+  return <MessengerPageContent />
 }

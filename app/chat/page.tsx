@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Layout } from "@/components/layout"
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
 import { ChatList } from "@/components/chat-list"
 import { ChatEmptyState } from "@/components/chat-empty-state"
 import { ActiveChat } from "@/components/active-chat"
@@ -107,8 +106,7 @@ export default function ChatPage() {
   }
 
   return (
-    <AssessmentAssistantProvider>
-      <Layout>
+    <Layout>
         <div className="h-[calc(100vh-120px)] flex relative px-6 pb-6">
           <ChatList
             chats={chats}
@@ -130,6 +128,5 @@ export default function ChatPage() {
           </div>
         </div>
       </Layout>
-    </AssessmentAssistantProvider>
   )
 }

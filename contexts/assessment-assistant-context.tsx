@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react"
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react"
 
 interface Message {
   id: string
@@ -56,6 +56,9 @@ interface AssessmentAssistantContextType {
   tutorialStep: number
   isTyping: boolean
   conversationPhase: 'initial' | 'readiness_check' | 'collaboration_intro' | 'clarity_check' | 'completion'
+  onboardingChannelTriggered: boolean
+  onboardingEmailSent: boolean
+  hasInteractedWithMia: boolean
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -66,6 +69,10 @@ interface AssessmentAssistantContextType {
   getBotResponse: (userMessage: string) => string
   startTutorial: () => void
   handleTutorialResponse: (userMessage: string) => void
+  triggerOnboardingChannel: () => void
+  triggerOnboardingEmail: () => void
+  markMiaAsInteracted: () => void
+  resetTutorialProgress: () => void
 }
 
 const AssessmentAssistantContext = createContext<AssessmentAssistantContextType | undefined>(undefined)
@@ -78,6 +85,9 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [tutorialStep, setTutorialStep] = useState(0)
   const [isTyping, setIsTyping] = useState(false)
   const [conversationPhase, setConversationPhase] = useState<'initial' | 'readiness_check' | 'collaboration_intro' | 'clarity_check' | 'completion'>('initial')
+  const [onboardingChannelTriggered, setOnboardingChannelTriggered] = useState(false)
+  const [onboardingEmailSent, setOnboardingEmailSent] = useState(false)
+  const [hasInteractedWithMia, setHasInteractedWithMia] = useState(false)
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -272,11 +282,41 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
           }
           addMessage(finalMessage)
           setIsTyping(false)
-          setHasNewMessage(true)
+          // Don't set hasNewMessage for the final completion message
+          // as it leads to onboarding flow
+          
+          // Trigger onboarding channel creation after a short delay
+          setTimeout(() => {
+            setOnboardingChannelTriggered(true)
+          }, 2000)
         }, 1500)
       }, 1000)
     }
   }, [conversationPhase, addMessage])
+
+  const triggerOnboardingChannel = useCallback(() => {
+    setOnboardingChannelTriggered(true)
+  }, [])
+
+  const triggerOnboardingEmail = useCallback(() => {
+    setOnboardingEmailSent(true)
+  }, [])
+
+  const markMiaAsInteracted = useCallback(() => {
+    setHasInteractedWithMia(true)
+  }, [])
+
+  const resetTutorialProgress = useCallback(() => {
+    setMessages(initialMessages)
+    setIsTutorialActive(false)
+    setTutorialStep(0)
+    setIsTyping(false)
+    setConversationPhase('initial')
+    setOnboardingChannelTriggered(false)
+    setOnboardingEmailSent(false)
+    setHasInteractedWithMia(false)
+    setHasNewMessage(false)
+  }, [])
 
   const value: AssessmentAssistantContextType = {
     messages,
@@ -286,6 +326,9 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     tutorialStep,
     isTyping,
     conversationPhase,
+    onboardingChannelTriggered,
+    onboardingEmailSent,
+    hasInteractedWithMia,
     addMessage,
     addUserMessage,
     addBotResponse,
@@ -296,6 +339,10 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     getBotResponse,
     startTutorial,
     handleTutorialResponse,
+    triggerOnboardingChannel,
+    triggerOnboardingEmail,
+    markMiaAsInteracted,
+    resetTutorialProgress,
   }
 
   return (

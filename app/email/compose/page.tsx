@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Layout } from "@/components/layout"
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
 import { ComposeContactSelection } from "@/components/compose-contact-selection"
 import { ComposeDocumentSelection } from "@/components/compose-document-selection"
 import { Button } from "@/components/ui/button"
@@ -167,8 +166,7 @@ export default function ComposePage() {
   const isSendButtonDisabled = !recipient || subject.trim() === "" || !message
 
   return (
-    <AssessmentAssistantProvider>
-      <Layout>
+    <Layout>
         <div className="h-[calc(100vh-120px)] flex -mt-8 px-6 pb-6">
           {/* Main Compose Area */}
           <div className="flex-1 bg-white rounded-lg border border-gray-200 flex flex-col">
@@ -357,6 +355,5 @@ export default function ComposePage() {
           )}
         </div>
       </Layout>
-    </AssessmentAssistantProvider>
   )
 }

@@ -4,17 +4,29 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Folder, MessageCircle, Mail, Phone, MessagesSquare } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
-const navigation = [
-  { name: "Beranda", href: "/home", icon: Home },
-  { name: "Messenger", href: "/messenger", icon: MessagesSquare },
-  { name: "Email", href: "/email", icon: Mail },
-  { name: "Call", href: "/call", icon: Phone },
-  { name: "Documents", href: "/documents", icon: Folder },
-]
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { onboardingChannelTriggered, onboardingEmailSent, hasInteractedWithMia } = useAssessmentAssistant()
+  
+  const navigation = [
+    { name: "Beranda", href: "/home", icon: Home },
+    { 
+      name: "Messenger", 
+      href: "/messenger", 
+      icon: MessagesSquare, 
+      hasNotification: onboardingChannelTriggered && !hasInteractedWithMia
+    },
+    { 
+      name: "Email", 
+      href: "/email", 
+      icon: Mail, 
+      hasNotification: onboardingEmailSent 
+    },
+    { name: "Call", href: "/call", icon: Phone },
+    { name: "Documents", href: "/documents", icon: Folder },
+  ]
 
   return (
     <TooltipProvider>
@@ -62,6 +74,9 @@ export function Sidebar() {
                       ${isActive ? "text-blue-400" : "text-white group-hover:text-gray-300"}
                     `}
                     />
+                    {item.hasNotification && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-gray-800"></div>
+                    )}
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="ml-2">

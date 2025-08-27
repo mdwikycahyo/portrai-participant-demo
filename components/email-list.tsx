@@ -11,6 +11,16 @@ interface EmailListProps {
 const emails = {
   inbox: [
     {
+      id: "first-mission",
+      sender: "Mia Avira",
+      avatar: "MA",
+      subject: "Misi Pertama Anda di Amboja",
+      preview:
+        "Selamat datang di Amboja! Sebagai bagian dari proses onboarding, kami telah menyiapkan misi pertama yang akan membantu...",
+      time: "12:30 PM",
+      hasAttachment: true,
+    },
+    {
       id: "ux-researcher",
       sender: "Dwiky Cahyo",
       avatar: "DC",

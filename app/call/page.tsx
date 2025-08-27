@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation"
 import { PhoneOutgoing } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Layout } from "@/components/layout"
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
 import { callHistoryData } from "@/lib/call-history-data"
 
 export default function CallPage() {
   return (
-    <AssessmentAssistantProvider>
-      <Layout>
+    <Layout>
         <div className="h-[calc(100vh-120px)] flex px-6 pb-6">
           <div className="flex-1 flex flex-col">
             {/* Header */}
@@ -60,6 +58,5 @@ export default function CallPage() {
           </div>
         </div>
       </Layout>
-    </AssessmentAssistantProvider>
   )
 }

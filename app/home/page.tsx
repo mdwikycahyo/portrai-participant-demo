@@ -1,12 +1,10 @@
 import { Layout } from "@/components/layout"
 import { ExecutiveMessage } from "@/components/executive-message"
 import { NotificationCenter } from "@/components/notification-center"
-import { AssessmentAssistantProvider } from "@/contexts/assessment-assistant-context"
 
 export default function HomePage() {
   return (
-    <AssessmentAssistantProvider>
-      <Layout>
+    <Layout>
         <div className="px-6 pb-6">
           {/* Welcome Section */}
           <div className="mb-8">
@@ -28,7 +26,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </Layout>
-    </AssessmentAssistantProvider>
+    </Layout>
   )
 }
