@@ -27,13 +27,14 @@ const initialMessages: Message[] = [
 const botResponses = {
   default: "Maaf, saya belum memahami pertanyaan Anda. Bisakah Anda menjelaskan lebih detail?",
   greeting: "Halo! Saya Assessment Assistant. Saya di sini untuk membantu Anda menggunakan platform ini.",
-  navigation: "Anda dapat menggunakan sidebar di sebelah kiri untuk navigasi ke Beranda, Chat, Email, atau Documents.",
+  navigation: "Anda dapat menggunakan sidebar di sebelah kiri untuk navigasi ke Beranda, Chat, Email, Documents, atau Call.",
   email:
     "Di halaman Email, Anda dapat membaca, membalas, dan meneruskan email. Gunakan tombol Tulis untuk menulis email baru.",
   documents:
     "Di halaman Documents, Anda dapat melihat folder dan file. Klik folder untuk melihat isinya, atau klik file untuk membacanya.",
   chat: "Di halaman Chat, Anda dapat berkomunikasi dengan rekan kerja. Pilih kontak dari daftar untuk memulai percakapan.",
-  help: "Saya dapat membantu Anda dengan navigasi, penggunaan email, manajemen dokumen, dan fitur chat. Apa yang ingin Anda ketahui?",
+  call: "Di halaman Call, Anda dapat melakukan panggilan suara dengan rekan kerja. Pilih kontak untuk memulai panggilan atau lihat riwayat panggilan sebelumnya.",
+  help: "Saya dapat membantu Anda dengan navigasi, penggunaan email, manajemen dokumen, fitur chat, dan fitur panggilan. Apa yang ingin Anda ketahui?",
 }
 
 const tutorialMessages = [
@@ -147,6 +148,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
       return botResponses.documents
     } else if (message.includes("chat") || message.includes("pesan")) {
       return botResponses.chat
+    } else if (message.includes("panggilan") || message.includes("call") || message.includes("telepon") || message.includes("suara") || message.includes("video")) {
+      return botResponses.call
     } else if (message.includes("bantuan") || message.includes("help") || message.includes("tolong")) {
       return botResponses.help
     } else {

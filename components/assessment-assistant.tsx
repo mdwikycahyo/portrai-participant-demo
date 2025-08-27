@@ -217,7 +217,7 @@ export function AssessmentAssistant({
                   ? "Ketik jawaban Anda (Ya/Tidak)..."
                   : conversationPhase === 'clarity_check'
                     ? "Ketik jawaban Anda (Ya, jelas/Tidak)..."
-                    : "Ketik pesan Anda..."
+                    : "Ketik pesan atau ketik 'Help'..."
             }
             disabled={isTutorialActive || isTyping}
             className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
