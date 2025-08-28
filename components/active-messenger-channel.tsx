@@ -37,13 +37,31 @@ export function ActiveMessengerChannel({
 }: ActiveMessengerChannelProps) {
   const [isParticipantsPanelOpen, setIsParticipantsPanelOpen] = useState(false)
   const [messageInput, setMessageInput] = useState("")
+  const [isAutoFilled, setIsAutoFilled] = useState(false)
+  const [lastProcessedMessageId, setLastProcessedMessageId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+
+  // Scroll to bottom function - only scrolls the messages container
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
+  }
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    scrollToBottom()
   }, [channel.messages])
+
+  // Enhanced scroll behavior - scroll when typing animation starts
+  useEffect(() => {
+    if (isTyping) {
+      // Immediate scroll when typing starts
+      scrollToBottom()
+    }
+  }, [isTyping])
 
   // Trigger onboarding when Mia is selected in onboarding channel
   useEffect(() => {
@@ -61,6 +79,42 @@ export function ActiveMessengerChannel({
       }
     }
   }, [channel.id, selectedParticipant?.name, channel.messages, onOnboardingTrigger])
+
+  // Auto-fill functionality for Interactive Tutorial
+  useEffect(() => {
+    if (channel.id !== "onboarding-channel" || selectedParticipant?.name !== "Mia Avira") {
+      return
+    }
+
+    // Get the latest message from Mia
+    const latestMiaMessage = channel.messages
+      .filter(msg => !msg.isUser && msg.senderName === "Mia Avira")
+      .slice(-1)[0]
+
+    if (!latestMiaMessage || latestMiaMessage.id === lastProcessedMessageId) {
+      return
+    }
+
+    // Message detection patterns
+    const shouldAutoFillFeedback = (message: string) => 
+      /Bagaimana sejauh ini.*Apakah sesi perkenalan.*membantu/i.test(message)
+
+    const shouldAutoFillEmailConfirmation = (message: string) => 
+      /Bisa tolong cek.*kabari.*fitur chat.*terima/i.test(message)
+
+    // Check if we should auto-fill based on the latest message
+    if (shouldAutoFillFeedback(latestMiaMessage.content)) {
+      const autoResponse = "Ya, sangat membantu. Saya merasa lebih siap untuk menggunakan platform ini."
+      setMessageInput(autoResponse)
+      setIsAutoFilled(true)
+      setLastProcessedMessageId(latestMiaMessage.id)
+    } else if (shouldAutoFillEmailConfirmation(latestMiaMessage.content)) {
+      const autoResponse = "Ya, saya sudah menerima emailnya. Terima kasih."
+      setMessageInput(autoResponse)
+      setIsAutoFilled(true)
+      setLastProcessedMessageId(latestMiaMessage.id)
+    }
+  }, [channel.messages, channel.id, selectedParticipant?.name, lastProcessedMessageId])
 
 
 
@@ -82,6 +136,7 @@ export function ActiveMessengerChannel({
       // Send message via parent callback
       onSendMessage(channel.id, userMessage)
       setMessageInput("")
+      setIsAutoFilled(false) // Reset auto-fill state after sending
     }
   }
 
@@ -118,6 +173,11 @@ export function ActiveMessengerChannel({
     
     // Special logic for Mia Avira onboarding conversation
     if (channel.id === "onboarding-channel" && selectedParticipant.name === "Mia Avira") {
+      // Show special placeholder when auto-filled
+      if (isAutoFilled) {
+        return "Tekan Send untuk melanjutkan..."
+      }
+      
       switch (conversationStage) {
         case 'initial':
           return "Tunggu Mia menyelesaikan perkenalannya..."
@@ -187,7 +247,11 @@ export function ActiveMessengerChannel({
         </div>
 
         {/* Messages */}
-        <div className="flex-1 p-4 bg-gray-50 overflow-y-auto">
+        <div 
+          ref={messagesContainerRef}
+          className="flex-1 p-4 bg-gray-50 overflow-y-auto"
+          style={{ scrollBehavior: 'smooth' }}
+        >
           {channel.messages.length === 0 ? (
             /* Empty Chat State */
             <div className="flex-1 flex items-center justify-center">
@@ -309,12 +373,26 @@ export function ActiveMessengerChannel({
           <div className="flex items-center gap-2">
             <Input
               value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
+              onChange={(e) => {
+                setMessageInput(e.target.value)
+                // Reset auto-fill state when user manually edits
+                if (isAutoFilled && e.target.value !== messageInput) {
+                  setIsAutoFilled(false)
+                }
+              }}
               onKeyPress={handleKeyPress}
               placeholder={inputPlaceholder}
-              className="flex-1"
+              className={`flex-1 ${
+                isAutoFilled 
+                  ? 'border-green-500 bg-green-50 focus:border-green-600 focus:ring-green-200' 
+                  : ''
+              }`}
             />
-            <Button onClick={handleSendMessage} size="icon">
+            <Button 
+              onClick={handleSendMessage} 
+              size="icon"
+              className={isAutoFilled ? 'bg-green-600 hover:bg-green-700' : ''}
+            >
               <Send className="w-4 h-4" />
             </Button>
           </div>

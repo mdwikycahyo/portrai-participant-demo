@@ -390,35 +390,36 @@ function MessengerPageContent() {
     }
   }
 
-  // Handle Mia Avira response logic
+  // Handle Mia Avira response logic - FIXED: Immediate response trigger
   const handleMiaAviraResponse = (userMessage: string, channelId: string) => {
-    // Use persisted messages for onboarding channel
-    const messagesToCheck = channelId === "onboarding-channel" ? onboardingMessages : (channels.find(c => c.id === channelId)?.messages || [])
-    const userResponses = messagesToCheck.filter(msg => msg.isUser).length
-    const isFirstResponse = userResponses === 1
-    const isPositiveResponse = /\b(ya|iya|baik|setuju|bagus|membantu|sangat|positif|terbantu)\b/i.test(userMessage.toLowerCase())
-    
-    // Check if we already have the thank you message to prevent duplicates
-    const hasThankYouMessage = messagesToCheck.some(msg => msg.content.includes("Baik, terima kasih atas jawaban anda"))
-    
     console.log('Debug - userMessage:', userMessage)
-    console.log('Debug - userResponses:', userResponses)
-    console.log('Debug - isFirstResponse:', isFirstResponse)
-    console.log('Debug - isPositiveResponse:', isPositiveResponse)
-    console.log('Debug - hasThankYouMessage:', hasThankYouMessage)
+    console.log('Debug - conversationStage:', conversationStage)
     
-    // Check if this is an email confirmation response
-    const isEmailConfirmation = /\b(ya.*terima|sudah.*terima|terima.*email|email.*terima|dapat.*email|email.*dapat)\b/i.test(userMessage.toLowerCase())
+    // Pattern detection for specific responses (immediate, no state dependency)
+    const isFeedbackResponse = /\b(ya|iya|baik|setuju|bagus|membantu|sangat|positif|terbantu|siap)\b/i.test(userMessage.toLowerCase()) && 
+                              conversationStage === 'waiting_for_response'
+    
+    const isEmailConfirmation = /\b(ya.*terima|sudah.*terima|terima.*email|email.*terima|dapat.*email|email.*dapat)\b/i.test(userMessage.toLowerCase()) &&
+                               conversationStage === 'mission_phase'
+    
+    // Use persisted messages only for duplicate checking
+    const messagesToCheck = channelId === "onboarding-channel" ? onboardingMessages : (channels.find(c => c.id === channelId)?.messages || [])
+    const hasThankYouMessage = messagesToCheck.some(msg => msg.content.includes("Baik, terima kasih atas jawaban anda"))
     const hasEmailConfirmationMessage = messagesToCheck.some(msg => msg.content.includes("Baik, terima kasih konfirmasinya"))
     
+    console.log('Debug - isFeedbackResponse:', isFeedbackResponse)
+    console.log('Debug - isEmailConfirmation:', isEmailConfirmation)
+    console.log('Debug - hasThankYouMessage:', hasThankYouMessage)
+    console.log('Debug - hasEmailConfirmationMessage:', hasEmailConfirmationMessage)
+    
+    // Handle email confirmation response
     if (isEmailConfirmation && !hasEmailConfirmationMessage) {
-      // Handle email confirmation and continue with task assignment
       handleEmailConfirmationResponse(channelId)
       return
     }
     
-    // Only proceed if this is the first positive response and we haven't sent the thank you message yet
-    if (isFirstResponse && isPositiveResponse && !hasThankYouMessage) {
+    // Handle feedback response - immediate trigger without counting messages
+    if (isFeedbackResponse && !hasThankYouMessage) {
       // Send follow-up messages from Mia with typing animation
       const messages = [
         {
@@ -467,7 +468,11 @@ function MessengerPageContent() {
           }, 2000) // 2 second typing delay
         }, index * 3500 + 1500) // Stagger messages by 3.5 seconds, start after 1.5 seconds
       })
-    } else if (isFirstResponse && !isPositiveResponse) {
+    } 
+    
+    // Handle non-positive feedback response - immediate trigger
+    const isNonPositiveFeedback = !isFeedbackResponse && conversationStage === 'waiting_for_response' && !hasThankYouMessage
+    if (isNonPositiveFeedback) {
       // Handle non-positive response with typing animation
       const messages = [
         {
