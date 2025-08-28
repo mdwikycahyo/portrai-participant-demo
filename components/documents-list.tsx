@@ -4,72 +4,12 @@ import Link from "next/link"
 import { Folder, FileText, Plus } from "lucide-react"
 import { documentsData } from "@/lib/documents-data"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { useDocuments } from "@/contexts/documents-context"
 import { Button } from "@/components/ui/button"
-import { useState, useEffect } from "react"
-import type { DocumentFile } from "@/lib/documents-data"
 
 export function DocumentsList() {
   const { downloadedDocuments } = useAssessmentAssistant()
-  const [savedDocuments, setSavedDocuments] = useState<DocumentFile[]>([])
-  
-  // Load saved documents from localStorage
-  useEffect(() => {
-    const loadSavedDocuments = () => {
-      try {
-        const storedDocuments = localStorage.getItem("documents")
-        if (storedDocuments) {
-          const documents = JSON.parse(storedDocuments)
-          // Convert saved documents to DocumentFile format
-          const convertedDocs: DocumentFile[] = documents.map((doc: any) => ({
-            id: doc.id,
-            name: doc.title + ".doc",
-            date: doc.lastModified || new Date().toLocaleDateString("id-ID", { 
-              day: "numeric", 
-              month: "short", 
-              year: "numeric" 
-            }),
-            owner: { name: "You", avatar: "YU" },
-            folderId: null,
-            content: {
-              title: doc.title,
-              author: "You",
-              lastUpdate: doc.lastModified || new Date().toLocaleDateString("id-ID", { 
-                day: "numeric", 
-                month: "long", 
-                year: "numeric" 
-              }),
-              sections: [
-                {
-                  title: "Content",
-                  content: doc.content || ""
-                }
-              ],
-              pages: 1
-            }
-          }))
-          setSavedDocuments(convertedDocs)
-        }
-      } catch (error) {
-        console.error("Error loading saved documents:", error)
-      }
-    }
-
-    loadSavedDocuments()
-    
-    // Listen for storage changes to update the list when documents are saved
-    const handleStorageChange = () => {
-      loadSavedDocuments()
-    }
-    
-    window.addEventListener('storage', handleStorageChange)
-    // Also listen for a custom event when documents are saved in the same tab
-    window.addEventListener('documentsUpdated', handleStorageChange)
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('documentsUpdated', handleStorageChange)
-    }
-  }, [])
+  const { savedDocuments } = useDocuments()
   
   // Helper function to parse date strings and convert to Date objects
   const parseDate = (dateStr: string): Date => {

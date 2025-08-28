@@ -12,6 +12,16 @@ import { Layout } from "@/components/layout"
 const contactData = {
   superior: [
     {
+      id: "arya-prajida",
+      name: "Arya Prajida",
+      level: "President Director",
+      division: "Executive",
+      email: "arya.prajida@amboja.com",
+      status: "online",
+      initials: "AP",
+      bgColor: "bg-blue-600",
+    },
+    {
       id: "1",
       name: "Ezra Kaell",
       level: "Assistant Vice President",
@@ -95,9 +105,72 @@ export default function ActiveCallPage() {
   const [transcript, setTranscript] = useState<Array<{ speaker: string; text: string }>>([])
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const [currentCharIndex, setCurrentCharIndex] = useState(0)
+  
+  // Arya Prajida specific states
+  const [isAryaCall, setIsAryaCall] = useState(false)
+  const [waitingForUserResponse, setWaitingForUserResponse] = useState(false)
+  const [userResponse, setUserResponse] = useState("")
+  const [conversationStep, setConversationStep] = useState(0)
+  const [userResponseText, setUserResponseText] = useState("")
 
   const allContacts = [...contactData.superior, ...contactData.peer]
   const contact = allContacts.find((c) => c.id === contactId)
+
+  // Check if this is Arya Prajida call
+  useEffect(() => {
+    if (contact?.id === "arya-prajida") {
+      setIsAryaCall(true)
+    }
+  }, [contact])
+
+  // Arya Prajida conversation flow
+  const getAryaConversationData = () => [
+    {
+      speaker: "Arya Prajida",
+      text: "Halo, Bapak Dwiky Cahyo. Saya Arya Prajida. Apa kabar?",
+      waitForResponse: true,
+    },
+    {
+      speaker: "Arya Prajida", 
+      text: "Pertama-tama, saya mau ucapkan selamat datang secara pribadi di keluarga besar Amboja. Senang sekali Anda sudah bergabung bersama kami.",
+      waitForResponse: false,
+    },
+    {
+      speaker: "Arya Prajida",
+      text: "Santai saja ya, ini sesi ngobrol ringan. Saya tidak akan memberikan tes, hehe. Saya hanya ingin kenal lebih dekat dengan anggota tim terbaru kami.",
+      waitForResponse: false,
+    },
+    {
+      speaker: "Arya Prajida",
+      text: "Saya sudah melihat hasil 'misi pertama' Anda, yaitu dokumen berjudul 'Apa yang Saya Ketahui Tentang Amboja'. Terima kasih banyak sudah meluangkan waktu untuk menyiapkannya dengan baik.",
+      waitForResponse: false,
+    },
+    {
+      speaker: "Arya Prajida", 
+      text: "Nah, saya tidak akan meminta Anda mengulang isi dokumen itu. Saya lebih tertarik dengan perspektif pribadi Anda.",
+      waitForResponse: false,
+    },
+    {
+      speaker: "Arya Prajida",
+      text: "Dari semua hal yang Anda baca dan rangkum, apa satu hal spesifik yang paling membuat Anda bersemangat atau paling 'klik' dengan Anda tentang Amboja? Coba ceritakan sedikit.",
+      waitForResponse: true,
+    },
+    {
+      speaker: "Arya Prajida",
+      text: "Itu poin yang sangat bagus. Saya senang Anda menyoroti hal tersebut.",
+      waitForResponse: false,
+    },
+    {
+      speaker: "Arya Prajida", 
+      text: "Baik, saya rasa sesi kita cukup sampai di sini saja.",
+      waitForResponse: false,
+    },
+    {
+      speaker: "Arya Prajida",
+      text: "Sekali lagi, selamat datang di tim. Pintu saya selalu terbuka untuk ide-ide baru, dan selamat berkarya di Amboja.",
+      waitForResponse: false,
+    },
+  ]
 
   // Generate conversation data with actual contact name
   const getConversationData = (contactName: string) => [
@@ -139,7 +212,7 @@ export default function ActiveCallPage() {
     },
   ]
 
-  const conversationData = contact ? getConversationData(contact.name) : []
+  const conversationData = contact ? (isAryaCall ? getAryaConversationData() : getConversationData(contact.name)) : []
 
   // Simulate real-time transcript
   useEffect(() => {
@@ -158,22 +231,58 @@ export default function ActiveCallPage() {
             text: currentMessage.text,
           },
         ])
-        setCurrentMessageIndex((prev) => prev + 1)
+        
+        // Check if this message requires user response (Arya Prajida flow)
+        if (isAryaCall && currentMessage.waitForResponse) {
+          setWaitingForUserResponse(true)
+          setConversationStep(currentMessageIndex)
+        } else {
+          setCurrentMessageIndex((prev) => prev + 1)
+        }
         setCurrentCharIndex(0)
       }
     }, 50) // Adjust speed of typing effect
 
     return () => clearInterval(interval)
-  }, [contact, currentMessageIndex, currentCharIndex, conversationData])
+  }, [contact, currentMessageIndex, currentCharIndex, conversationData, isAryaCall])
+
+  // Handle user response submission
+  const handleUserResponse = () => {
+    if (userResponseText.trim()) {
+      // Add user response to transcript
+      setTranscript((prev) => [
+        ...prev,
+        {
+          speaker: "Dwiky Cahyo",
+          text: userResponseText.trim(),
+        },
+      ])
+      
+      // Continue conversation
+      setWaitingForUserResponse(false)
+      setUserResponseText("")
+      setCurrentMessageIndex((prev) => prev + 1)
+    }
+  }
 
   const handleCompleteCall = () => {
-    // Use window.location.href for a full page navigation instead of client-side routing
-    window.location.href = "/messenger?callEnd=complete&contact=ezra"
+    if (isAryaCall) {
+      // Use window.location.href for a full page navigation for Arya calls
+      window.location.href = "/messenger?callEnd=complete&contact=arya"
+    } else {
+      // Use window.location.href for a full page navigation instead of client-side routing
+      window.location.href = "/messenger?callEnd=complete&contact=ezra"
+    }
   }
 
   const handleDisconnectCall = () => {
-    // Use window.location.href for a full page navigation instead of client-side routing
-    window.location.href = "/messenger?callEnd=disconnect&contact=ezra"
+    if (isAryaCall) {
+      // Use window.location.href for a full page navigation for Arya calls
+      window.location.href = "/messenger?callEnd=disconnect&contact=arya"
+    } else {
+      // Use window.location.href for a full page navigation instead of client-side routing
+      window.location.href = "/messenger?callEnd=disconnect&contact=ezra"
+    }
   }
 
   const toggleMute = () => {
@@ -287,12 +396,36 @@ export default function ActiveCallPage() {
                   ))}
 
                   {/* Current typing message */}
-                  {currentMessage && currentDisplayText && (
+                  {currentMessage && currentDisplayText && !waitingForUserResponse && (
                     <div className="border-b border-gray-100 pb-3">
                       <div className="font-medium text-gray-900 text-sm mb-1">{currentMessage.speaker}</div>
                       <div className="text-sm text-gray-600 leading-relaxed">
                         {currentDisplayText}
                         <span className="animate-pulse">|</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* User Response Input */}
+                  {waitingForUserResponse && isAryaCall && (
+                    <div className="border-t border-gray-200 pt-4 mt-4">
+                      <div className="font-medium text-gray-900 text-sm mb-2">Respons Anda:</div>
+                      <div className="space-y-3">
+                        <textarea
+                          value={userResponseText}
+                          onChange={(e) => setUserResponseText(e.target.value)}
+                          placeholder="Ketik respons Anda di sini..."
+                          className="w-full p-2 text-sm border border-gray-300 rounded-md resize-none"
+                          rows={3}
+                        />
+                        <Button 
+                          onClick={handleUserResponse}
+                          disabled={!userResponseText.trim()}
+                          size="sm"
+                          className="w-full"
+                        >
+                          Kirim Respons
+                        </Button>
                       </div>
                     </div>
                   )}

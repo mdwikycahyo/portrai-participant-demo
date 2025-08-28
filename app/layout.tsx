@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AssessmentAssistantProvider } from '@/contexts/assessment-assistant-context'
+import { DocumentsProvider } from '@/contexts/documents-context'
 
 export const metadata: Metadata = {
   title: 'PortrAI Participant Mockup',
@@ -20,7 +21,9 @@ export default function RootLayout({
       </head>
       <body>
         <AssessmentAssistantProvider>
-          {children}
+          <DocumentsProvider>
+            {children}
+          </DocumentsProvider>
         </AssessmentAssistantProvider>
       </body>
     </html>

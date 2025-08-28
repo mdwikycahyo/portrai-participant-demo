@@ -16,15 +16,23 @@ import {
   AlignCenter,
   AlignRight,
   Send,
+  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { ComposeDocumentSelection } from "@/components/compose-document-selection"
+import { documentsData } from "@/lib/documents-data"
+import { useRouter } from "next/navigation"
+import { useDocuments } from "@/contexts/documents-context"
 
 interface EmailContentProps {
   emailId: string
 }
+
+// Type for tracking selected documents and their pages
+type SelectedDocumentsMap = Record<string, number[]> // fileId -> array of selected page numbers
 
 const emailData = {
   "first-mission": {
@@ -86,11 +94,17 @@ President Director`,
 }
 
 export function EmailContent({ emailId }: EmailContentProps) {
+  const router = useRouter()
   const [replyMode, setReplyMode] = useState<"none" | "reply" | "forward">("none")
   const [replyContent, setReplyContent] = useState("")
   const [forwardRecipient, setForwardRecipient] = useState("")
   const [showContactSelection, setShowContactSelection] = useState(false)
-  const { markEmailAsRead, addDownloadedDocument } = useAssessmentAssistant()
+  const [showDocumentSelection, setShowDocumentSelection] = useState(false)
+  const [isDocumentAnimating, setIsDocumentAnimating] = useState(false)
+  const [selectedDocuments, setSelectedDocuments] = useState<SelectedDocumentsMap>({})
+  const [attachedDocuments, setAttachedDocuments] = useState<SelectedDocumentsMap>({})
+  const { savedDocuments } = useDocuments()
+  const { markEmailAsRead, addDownloadedDocument, triggerEmailReplyWithAttachment } = useAssessmentAssistant()
 
   const email = emailData[emailId as keyof typeof emailData]
 
@@ -100,6 +114,8 @@ export function EmailContent({ emailId }: EmailContentProps) {
       markEmailAsRead()
     }
   }, [emailId, markEmailAsRead])
+
+
 
   const handleDownload = (attachmentName: string) => {
     if (emailId === "first-mission" && attachmentName === "Profil Perusahaan Amboja.pdf") {
@@ -148,6 +164,90 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
       // Simulate download
       alert(`Dokumen "${attachmentName}" berhasil didownload dan ditambahkan ke Documents!`)
     }
+  }
+
+  // Document attachment handlers
+  const handleOpenDocumentSelection = () => {
+    setShowDocumentSelection(true)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsDocumentAnimating(true)
+      })
+    })
+  }
+
+  const handleDocumentSelectionChange = (newSelection: SelectedDocumentsMap) => {
+    setSelectedDocuments(newSelection)
+  }
+
+  const handleAttachDocuments = () => {
+    // Move selected documents to attached documents
+    setAttachedDocuments((prev) => ({ ...prev, ...selectedDocuments }))
+    // Clear selection and close panel
+    setSelectedDocuments({})
+    setIsDocumentAnimating(false)
+    setTimeout(() => setShowDocumentSelection(false), 300)
+  }
+
+  const handleCloseDocumentSelection = () => {
+    setIsDocumentAnimating(false)
+    setTimeout(() => setShowDocumentSelection(false), 300)
+  }
+
+  const handleRemoveAttachedDocument = (fileId: string) => {
+    setAttachedDocuments((prev) => {
+      const newAttached = { ...prev }
+      delete newAttached[fileId]
+      return newAttached
+    })
+  }
+
+  // Get file details for attached documents
+  const getFileDetails = (fileId: string) => {
+    // Check in folders first
+    for (const folder of documentsData.folders) {
+      const file = folder.files.find((f) => f.id === fileId)
+      if (file) return file
+    }
+    // Check in root files
+    const rootFile = documentsData.rootFiles.find((f) => f.id === fileId)
+    if (rootFile) return rootFile
+
+    // Check in saved documents (already converted to DocumentFile format)
+    const savedDoc = savedDocuments.find((doc) => doc.id === fileId)
+    if (savedDoc) {
+      return savedDoc
+    }
+
+    return null
+  }
+
+  // Handle send email reply
+  const handleSendReply = () => {
+    if (!replyContent.trim()) {
+      alert("Harap isi pesan balasan!")
+      return
+    }
+
+    // Check if this is a reply to Mia's email with attachments
+    const isMiaEmail = emailId === "first-mission"
+    const hasAttachments = Object.keys(attachedDocuments).length > 0
+    
+    if (isMiaEmail && hasAttachments) {
+      // This is a reply to Mia's email with attachments - trigger the completion flow
+      triggerEmailReplyWithAttachment()
+    }
+    
+    // Simulate email sending
+    alert(`Email balasan berhasil dikirim!`)
+    
+    // Reset reply mode and content
+    setReplyMode("none")
+    setReplyContent("")
+    setAttachedDocuments({})
+    
+    // Navigate back to email list
+    router.push("/email")
   }
 
   if (!email) return null
@@ -268,6 +368,39 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
               </Button>
             </div>
 
+            {/* Attached Documents List */}
+            {Object.keys(attachedDocuments).length > 0 && (
+              <div className="space-y-2 mb-4">
+                <h4 className="text-sm font-medium text-gray-700">Dokumen Terlampir:</h4>
+                <div className="space-y-2">
+                  {Object.entries(attachedDocuments).map(([fileId, pages]) => {
+                    const file = getFileDetails(fileId)
+                    if (!file) return null
+
+                    return (
+                      <div key={fileId} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <FileText className="w-4 h-4 text-gray-600" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{file.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {pages.length} halaman terpilih dari {file.content.pages || 0}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveAttachedDocument(fileId)}
+                          className="p-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Message Area */}
             <Textarea
               value={replyContent}
@@ -278,14 +411,17 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
 
             {/* Action Buttons */}
             <div className="flex items-center justify-between">
-              <Button variant="outline" disabled>
+              <Button variant="outline" onClick={handleOpenDocumentSelection}>
                 Lampirkan Dokumen
               </Button>
               <div className="flex gap-3">
                 <Button variant="outline" disabled>
                   Simpan sebagai Draft
                 </Button>
-                <Button className="bg-gray-800 hover:bg-gray-700 text-white" disabled>
+                <Button 
+                  className="bg-gray-800 hover:bg-gray-700 text-white"
+                  onClick={handleSendReply}
+                >
                   <Send className="w-4 h-4 mr-2" />
                   Kirim
                 </Button>
@@ -381,6 +517,17 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
             </div>
           </div>
         </div>
+      )}
+
+      {/* Document Selection Panel */}
+      {showDocumentSelection && (
+        <ComposeDocumentSelection
+          selectedDocuments={selectedDocuments}
+          onSelectionChange={handleDocumentSelectionChange}
+          onClose={handleCloseDocumentSelection}
+          onAttach={handleAttachDocuments}
+          isAnimating={isDocumentAnimating}
+        />
       )}
     </div>
   )

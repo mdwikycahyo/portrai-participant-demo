@@ -26,6 +26,7 @@ import {
 import { documentsData } from "@/lib/documents-data"
 import { cn } from "@/lib/utils"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { useDocuments } from "@/contexts/documents-context"
 
 // Type for tracking selected documents and their pages
 export type SelectedDocumentsMap = Record<string, number[]> // fileId -> array of selected page numbers
@@ -57,6 +58,7 @@ const shuffledTags = shuffleArray(allAvailableTags)
 export default function ComposePage() {
   const router = useRouter()
   const { triggerEmailReplyWithAttachment } = useAssessmentAssistant()
+  const { savedDocuments } = useDocuments()
   const [showContactSelection, setShowContactSelection] = useState(false)
   const [showDocumentSelection, setShowDocumentSelection] = useState(false)
   const [isContactAnimating, setIsContactAnimating] = useState(false)
@@ -68,37 +70,8 @@ export default function ComposePage() {
   const [subject, setSubject] = useState<string>("")
   const [message, setMessage] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [savedDocuments, setSavedDocuments] = useState<any[]>([])
 
-  // Load saved documents from localStorage
-  useEffect(() => {
-    const loadSavedDocuments = () => {
-      try {
-        const storedDocuments = localStorage.getItem("documents")
-        if (storedDocuments) {
-          const documents = JSON.parse(storedDocuments)
-          setSavedDocuments(documents)
-        }
-      } catch (error) {
-        console.error("Error loading saved documents:", error)
-      }
-    }
 
-    loadSavedDocuments()
-    
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      loadSavedDocuments()
-    }
-    
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('documentsUpdated', handleStorageChange)
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('documentsUpdated', handleStorageChange)
-    }
-  }, [])
 
   const handleOpenContactSelection = () => {
     setShowContactSelection(true)
@@ -212,37 +185,10 @@ export default function ComposePage() {
     const rootFile = documentsData.rootFiles.find((f) => f.id === fileId)
     if (rootFile) return rootFile
 
-    // Check in saved documents
+    // Check in saved documents (already converted to DocumentFile format)
     const savedDoc = savedDocuments.find((doc) => doc.id === fileId)
     if (savedDoc) {
-      // Convert saved document to DocumentFile format
-      return {
-        id: savedDoc.id,
-        name: savedDoc.title + ".doc",
-        date: savedDoc.lastModified || new Date().toLocaleDateString("id-ID", { 
-          day: "numeric", 
-          month: "short", 
-          year: "numeric" 
-        }),
-        owner: { name: "You", avatar: "YU" },
-        folderId: null,
-        content: {
-          title: savedDoc.title,
-          author: "You",
-          lastUpdate: savedDoc.lastModified || new Date().toLocaleDateString("id-ID", { 
-            day: "numeric", 
-            month: "long", 
-            year: "numeric" 
-          }),
-          sections: [
-            {
-              title: "Content",
-              content: savedDoc.content || ""
-            }
-          ],
-          pages: 1
-        }
-      }
+      return savedDoc
     }
 
     return null
@@ -433,8 +379,18 @@ export default function ComposePage() {
               isAnimating={isContactAnimating}
             />
           )}
+        </div>
 
-          {showDocumentSelection && (
+        {/* Document Selection Panel - Fixed Position with Backdrop */}
+        {showDocumentSelection && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className={`fixed inset-0 bg-black bg-opacity-25 z-40 transition-opacity duration-300 ${
+                isDocumentAnimating ? "opacity-100" : "opacity-0"
+              }`}
+              onClick={handleCloseDocumentSelection}
+            />
             <ComposeDocumentSelection
               selectedDocuments={selectedDocuments}
               onSelectionChange={handleDocumentSelectionChange}
@@ -442,8 +398,8 @@ export default function ComposePage() {
               onAttach={handleAttachDocuments}
               isAnimating={isDocumentAnimating}
             />
-          )}
-        </div>
+          </>
+        )}
       </Layout>
   )
 }

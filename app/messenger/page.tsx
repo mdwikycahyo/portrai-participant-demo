@@ -55,61 +55,112 @@ function MessengerPageContent() {
     const callEnd = searchParams.get("callEnd")
     const contact = searchParams.get("contact")
 
-    if (callEnd && contact === "ezra" && !callEndProcessed) {
+    if (callEnd && (contact === "ezra" || contact === "arya") && !callEndProcessed) {
       setCallEndProcessed(true)
       
       // Use functional update to access the latest channels state
       setChannels((prevChannels) => {
-        // Find Ezra's channel
-        const ezraChannel = prevChannels.find((channel) => channel.name === "Peluang Sponsorship S24")
-        const ezraParticipant = ezraChannel?.participants.find((p) => p.name === "Ezra Kaell")
+        if (contact === "ezra") {
+          // Find Ezra's channel
+          const ezraChannel = prevChannels.find((channel) => channel.name === "Peluang Sponsorship S24")
+          const ezraParticipant = ezraChannel?.participants.find((p) => p.name === "Ezra Kaell")
 
-        if (ezraChannel && ezraParticipant) {
-          // Auto-select Ezra's channel and participant
-          setSelectedChannelId(ezraChannel.id)
-          setSelectedParticipant(ezraParticipant)
+          if (ezraChannel && ezraParticipant) {
+            // Auto-select Ezra's channel and participant
+            setSelectedChannelId(ezraChannel.id)
+            setSelectedParticipant(ezraParticipant)
 
-          // Add call end messages
-          const currentTime = new Date().toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })
+            // Add call end messages
+            const currentTime = new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
 
-          // Generate truly unique IDs with random strings
-          const randomStr1 = Math.random().toString(36).substring(2, 8)
-          const randomStr2 = Math.random().toString(36).substring(2, 8)
-          
-          const systemMessage = {
-            id: `msg-system-${Date.now()}-${randomStr1}`,
-            senderName: "System",
-            senderAvatar: "S",
-            content: callEnd === "complete" ? "Panggilan selesai (5:23 durasi)" : "Panggilan terputus (2:15 durasi)",
-            timestamp: currentTime,
-            isUser: false,
+            // Generate truly unique IDs with random strings
+            const randomStr1 = Math.random().toString(36).substring(2, 8)
+            const randomStr2 = Math.random().toString(36).substring(2, 8)
+            
+            const systemMessage = {
+              id: `msg-system-${Date.now()}-${randomStr1}`,
+              senderName: "System",
+              senderAvatar: "S",
+              content: callEnd === "complete" ? "Panggilan selesai (5:23 durasi)" : "Panggilan terputus (2:15 durasi)",
+              timestamp: currentTime,
+              isUser: false,
+            }
+
+            const ezraMessage = {
+              id: `msg-ezra-${Date.now()}-${randomStr2}`,
+              senderName: "Ezra Kaell",
+              senderAvatar: "EK",
+              content:
+                callEnd === "complete"
+                  ? "Terima kasih untuk diskusi yang produktif! Saya akan follow up action items yang kita bahas."
+                  : "Sepertinya panggilan kita terputus. Bisa kita lanjutkan di sini atau coba call lagi.",
+              timestamp: currentTime,
+              isUser: false,
+            }
+
+            // Return updated channels
+            return prevChannels.map((channel) =>
+              channel.id === ezraChannel.id
+                ? { ...channel, messages: [...channel.messages, systemMessage, ezraMessage] }
+                : channel,
+            )
           }
+        } else if (contact === "arya") {
+          // Find Arya's channel (President Director channel)
+          const aryaChannel = prevChannels.find((channel) => channel.id === "president-director-channel")
+          const aryaParticipant = aryaChannel?.participants.find((p) => p.name === "Arya Prajida")
 
-          const ezraMessage = {
-            id: `msg-ezra-${Date.now()}-${randomStr2}`,
-            senderName: "Ezra Kaell",
-            senderAvatar: "EK",
-            content:
-              callEnd === "complete"
-                ? "Terima kasih untuk diskusi yang produktif! Saya akan follow up action items yang kita bahas."
-                : "Sepertinya panggilan kita terputus. Bisa kita lanjutkan di sini atau coba call lagi.",
-            timestamp: currentTime,
-            isUser: false,
+          if (aryaChannel && aryaParticipant) {
+            // Auto-select Arya's channel and participant
+            setSelectedChannelId(aryaChannel.id)
+            setSelectedParticipant(aryaParticipant)
+
+            // Add call end messages
+            const currentTime = new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+
+            // Generate truly unique IDs with random strings
+            const randomStr1 = Math.random().toString(36).substring(2, 8)
+            const randomStr2 = Math.random().toString(36).substring(2, 8)
+            
+            const systemMessage = {
+              id: `msg-system-${Date.now()}-${randomStr1}`,
+              senderName: "System",
+              senderAvatar: "S",
+              content: callEnd === "complete" ? "Panggilan selesai (8:45 durasi)" : "Panggilan terputus (3:22 durasi)",
+              timestamp: currentTime,
+              isUser: false,
+            }
+
+            const aryaMessage = {
+              id: `msg-arya-${Date.now()}-${randomStr2}`,
+              senderName: "Arya Prajida",
+              senderAvatar: "AP",
+              content:
+                callEnd === "complete"
+                  ? "Terima kasih untuk percakapan yang menyenangkan! Saya senang bisa berkenalan dengan Anda. Selamat berkarya di Amboja!"
+                  : "Sepertinya koneksi kita terputus. Tidak apa-apa, kita bisa lanjutkan kapan-kapan lagi.",
+              timestamp: currentTime,
+              isUser: false,
+            }
+
+            // Return updated channels
+            return prevChannels.map((channel) =>
+              channel.id === aryaChannel.id
+                ? { ...channel, messages: [...channel.messages, systemMessage, aryaMessage] }
+                : channel,
+            )
           }
-
-          // Return updated channels
-          return prevChannels.map((channel) =>
-            channel.id === ezraChannel.id
-              ? { ...channel, messages: [...channel.messages, systemMessage, ezraMessage] }
-              : channel,
-          )
         }
         
-        // If no Ezra channel found, return unchanged
+        // If no matching channel found, return unchanged
         return prevChannels
       })
       

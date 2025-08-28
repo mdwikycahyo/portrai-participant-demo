@@ -10,65 +10,17 @@ interface EmailListProps {
 }
 
 const emails = {
-  inbox: [
-    {
-      id: "first-mission",
-      sender: "Mia Avira",
-      avatar: "MA",
-      subject: "Misi Pertama Anda di Amboja",
-      preview:
-        "Selamat datang di Amboja! Sebagai bagian dari proses onboarding, kami telah menyiapkan misi pertama yang akan membantu...",
-      time: "12:30 PM",
-      hasAttachment: true,
-    },
-    {
-      id: "ux-researcher",
-      sender: "Dwiky Cahyo",
-      avatar: "DC",
-      subject: "Kick-off Discussion",
-      preview:
-        "Kita tengah memasuki fase penting dalam perjalanan Amboja sebagai perusahaan teknologi yang berbasis pada keber...",
-      time: "2:00 PM",
-      hasAttachment: true,
-    },
-    {
-      id: "ui-developer",
-      sender: "UI Developer",
-      avatar: "UD",
-      subject: "Launch Planning Session",
-      preview:
-        "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-      time: "4:15 PM",
-      hasAttachment: true,
-    },
-    {
-      id: "product-manager",
-      sender: "Product Manager",
-      avatar: "PM",
-      subject: "Project Commencement Brief...",
-      preview:
-        "Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; In egestas orci ac quam...",
-      time: "11:45 AM",
-      hasAttachment: true,
-    },
-    {
-      id: "frontend-engineer",
-      sender: "Front-end Engineer",
-      avatar: "FE",
-      subject: "Initial Project Overview",
-      preview:
-        "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, tot...",
-      time: "9:30 AM",
-      hasAttachment: true,
-    },
-  ],
   sent: [],
   draft: [],
 }
 
 export function EmailList({ selectedEmail, onEmailSelect, activeTab }: EmailListProps) {
-  const { onboardingEmailSent, emailRead } = useAssessmentAssistant()
-  const currentEmails = emails[activeTab as keyof typeof emails] || []
+  const { onboardingEmailSent, emailRead, inboxEmails } = useAssessmentAssistant()
+  
+  // Get emails based on active tab
+  const currentEmails = activeTab === "inbox" 
+    ? inboxEmails 
+    : emails[activeTab as keyof typeof emails] || []
 
   if (currentEmails.length === 0) {
     return (

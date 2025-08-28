@@ -29,11 +29,13 @@ import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Layout } from "@/components/layout"
+import { useDocuments } from "@/contexts/documents-context"
 
 export default function DocumentEditorPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const documentId = searchParams.get("document")
+  const { addDocument, updateDocument, getDocumentById } = useDocuments()
 
   const [title, setTitle] = useState("Untitled Document")
   const [content, setContent] = useState("<p></p>")
@@ -42,24 +44,16 @@ export default function DocumentEditorPage() {
   const editorRef = useRef<HTMLDivElement>(null)
   const [fontSize, setFontSize] = useState("100%")
 
-  // Load existing document from localStorage if documentId is provided
+  // Load existing document from context if documentId is provided
   useEffect(() => {
     if (documentId) {
-      try {
-        const storedDocuments = localStorage.getItem("documents")
-        if (storedDocuments) {
-          const documents = JSON.parse(storedDocuments)
-          const document = documents.find((doc: any) => doc.id === documentId)
-          if (document) {
-            setTitle(document.title)
-            setContent(document.content)
-          }
-        }
-      } catch (error) {
-        console.error("Error loading document:", error)
+      const document = getDocumentById(documentId)
+      if (document) {
+        setTitle(document.title)
+        setContent(document.content)
       }
     }
-  }, [documentId])
+  }, [documentId, getDocumentById])
 
   // Initialize editor with content
   useEffect(() => {
@@ -105,23 +99,15 @@ export default function DocumentEditorPage() {
       content: currentContent,
     }
 
-    // Save to localStorage
+    // Save using context
     try {
-      const storedDocuments = localStorage.getItem("documents")
-      let documents = storedDocuments ? JSON.parse(storedDocuments) : []
-
       if (documentId) {
         // Update existing document
-        documents = documents.map((doc: any) => (doc.id === documentId ? newDocument : doc))
+        updateDocument(documentId, newDocument)
       } else {
         // Add new document
-        documents = [newDocument, ...documents]
+        addDocument(newDocument)
       }
-
-      localStorage.setItem("documents", JSON.stringify(documents))
-
-      // Dispatch custom event to notify document list to refresh
-      window.dispatchEvent(new Event('documentsUpdated'))
 
       // Simulate saving delay
       setTimeout(() => {

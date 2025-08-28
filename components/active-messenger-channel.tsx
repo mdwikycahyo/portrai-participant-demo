@@ -147,6 +147,21 @@ export function ActiveMessengerChannel({
     )
   }
 
+  // Check if message should have voice call bubble (for Arya Prajida)
+  const shouldShowVoiceCallBubble = (message: any) => {
+    return (
+      message.senderName === "Arya Prajida" &&
+      message.content.includes("Apakah Anda ada waktu sekitar 5-10 menit sekarang untuk kita terhubung lewat **Voice Call** singkat?") &&
+      channel.id === "president-director-channel"
+    )
+  }
+
+  const handleVoiceCallClick = () => {
+    // Get Arya Prajida's contact ID or use a default
+    const aryaContactId = "arya-prajida" // This could be dynamic based on participant data
+    router.push(`/call/active/${aryaContactId}`)
+  }
+
   // Check if message is system message
   const isSystemMessage = (message: any) => {
     return message.senderName === "System"
@@ -233,6 +248,17 @@ export function ActiveMessengerChannel({
                               >
                                 <Phone className="w-4 h-4 text-blue-500" />
                                 <span className="text-blue-500 font-medium">Call Now</span>
+                              </button>
+                            </div>
+                          )}
+                          {shouldShowVoiceCallBubble(message) && (
+                            <div className="-mx-3 -mb-3 mt-3 border-t border-gray-200">
+                              <button
+                                onClick={handleVoiceCallClick}
+                                className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-green-50 hover:bg-green-100 rounded-b-lg transition-colors duration-200"
+                              >
+                                <Phone className="w-4 h-4 text-green-600" />
+                                <span className="text-green-600 font-medium">Panggil John Doe</span>
                               </button>
                             </div>
                           )}

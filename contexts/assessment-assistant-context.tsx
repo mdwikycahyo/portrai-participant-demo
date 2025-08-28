@@ -72,6 +72,16 @@ const tutorialContinuationMessages = [
   "Konsep ini cukup jelas ya, Bapak?"
 ]
 
+interface Email {
+  id: string
+  sender: string
+  avatar: string
+  subject: string
+  preview: string
+  time: string
+  hasAttachment: boolean
+}
+
 interface AssessmentAssistantContextType {
   messages: Message[]
   isOpen: boolean
@@ -88,6 +98,7 @@ interface AssessmentAssistantContextType {
   onboardingMessages: any[]
   conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion'
   presidentDirectorChannelTriggered: boolean
+  inboxEmails: Email[]
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -112,6 +123,46 @@ interface AssessmentAssistantContextType {
 
 const AssessmentAssistantContext = createContext<AssessmentAssistantContextType | undefined>(undefined)
 
+// Default emails that are always present
+const defaultEmails: Email[] = [
+  {
+    id: "ux-researcher",
+    sender: "Dwiky Cahyo",
+    avatar: "DC",
+    subject: "Kick-off Discussion",
+    preview: "Kita tengah memasuki fase penting dalam perjalanan Amboja sebagai perusahaan teknologi yang berbasis pada keber...",
+    time: "2:00 PM",
+    hasAttachment: true,
+  },
+  {
+    id: "ui-developer",
+    sender: "UI Developer",
+    avatar: "UD",
+    subject: "Launch Planning Session",
+    preview: "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+    time: "4:15 PM",
+    hasAttachment: true,
+  },
+  {
+    id: "product-manager",
+    sender: "Product Manager",
+    avatar: "PM",
+    subject: "Project Commencement Brief...",
+    preview: "Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; In egestas orci ac quam...",
+    time: "11:45 AM",
+    hasAttachment: true,
+  },
+  {
+    id: "frontend-engineer",
+    sender: "Front-end Engineer",
+    avatar: "FE",
+    subject: "Initial Project Overview",
+    preview: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, tot...",
+    time: "9:30 AM",
+    hasAttachment: true,
+  },
+]
+
 export function AssessmentAssistantProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [isOpen, setIsOpen] = useState(false)
@@ -128,6 +179,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [onboardingMessages, setOnboardingMessages] = useState(onboardingChannel.messages)
   const [conversationStage, setConversationStage] = useState<'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion'>('initial')
   const [presidentDirectorChannelTriggered, setPresidentDirectorChannelTriggered] = useState(false)
+  const [inboxEmails, setInboxEmails] = useState<Email[]>(defaultEmails)
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -359,6 +411,20 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
 
   const triggerOnboardingEmail = useCallback(() => {
     setOnboardingEmailSent(true)
+    
+    // Add Mia's email to inbox
+    const miaEmail: Email = {
+      id: "first-mission",
+      sender: "Mia Avira",
+      avatar: "MA",
+      subject: "Misi Pertama Anda di Amboja",
+      preview: "Selamat datang di Amboja! Sebagai bagian dari proses onboarding, kami telah menyiapkan misi pertama yang akan membantu...",
+      time: "12:30 PM",
+      hasAttachment: true,
+    }
+    
+    // Add Mia's email to the beginning of the inbox
+    setInboxEmails(prev => [miaEmail, ...prev])
   }, [])
 
   const markMiaAsInteracted = useCallback(() => {
@@ -439,6 +505,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setConversationStage('initial')
     setPresidentDirectorChannelTriggered(false)
     setHasNewMessage(false)
+    setInboxEmails(defaultEmails) // Reset to default emails only
   }, [])
 
   const value: AssessmentAssistantContextType = {
@@ -457,6 +524,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     onboardingMessages,
     conversationStage,
     presidentDirectorChannelTriggered,
+    inboxEmails,
     addMessage,
     addUserMessage,
     addBotResponse,

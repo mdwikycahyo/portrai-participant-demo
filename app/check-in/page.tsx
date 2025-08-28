@@ -21,7 +21,6 @@ export default function CheckInPage() {
   // Custom hooks
   const { timeLeft, isCheckInEnabled } = useTimer(10);
   const {
-    isChecking,
     componentStates,
     isCompatibilityComplete,
     handleCheckDevice,
@@ -50,8 +49,6 @@ export default function CheckInPage() {
         return (
           <CompatibilityTab
             componentStates={componentStates}
-            isChecking={isChecking}
-            onCheckDevice={handleCheckDevice}
           />
         );
       case "simulation":
