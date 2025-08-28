@@ -90,6 +90,7 @@ interface AssessmentAssistantContextType {
   tutorialStep: number
   isTyping: boolean
   conversationPhase: 'initial' | 'readiness_check' | 'collaboration_intro' | 'clarity_check' | 'completion'
+  tutorialPendingStart: boolean
   onboardingChannelTriggered: boolean
   onboardingEmailSent: boolean
   hasInteractedWithMia: boolean
@@ -108,6 +109,7 @@ interface AssessmentAssistantContextType {
   clearMessages: () => void
   getBotResponse: (userMessage: string) => string
   startTutorial: () => void
+  startDeferredTutorialMessages: () => void
   handleTutorialResponse: (userMessage: string) => void
   triggerOnboardingChannel: () => void
   triggerOnboardingEmail: () => void
@@ -171,6 +173,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [tutorialStep, setTutorialStep] = useState(0)
   const [isTyping, setIsTyping] = useState(false)
   const [conversationPhase, setConversationPhase] = useState<'initial' | 'readiness_check' | 'collaboration_intro' | 'clarity_check' | 'completion'>('initial')
+  const [tutorialPendingStart, setTutorialPendingStart] = useState(false)
   const [onboardingChannelTriggered, setOnboardingChannelTriggered] = useState(false)
   const [onboardingEmailSent, setOnboardingEmailSent] = useState(false)
   const [hasInteractedWithMia, setHasInteractedWithMia] = useState(false)
@@ -279,15 +282,24 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   }, [])
 
   const startTutorial = useCallback(() => {
-    setIsTutorialActive(true)
+    // Set up tutorial state and show red dot notification
+    setTutorialPendingStart(true)
     setTutorialStep(0)
     setHasNewMessage(true)
     setConversationPhase('initial')
     
     // Clear existing messages except the initial one
     setMessages(initialMessages)
+  }, [])
+
+  const startDeferredTutorialMessages = useCallback(() => {
+    // Only start if tutorial is pending
+    if (!tutorialPendingStart) return
     
-    // Send the first tutorial message immediately
+    setTutorialPendingStart(false)
+    setIsTutorialActive(true)
+    
+    // Send the first tutorial message
     setTimeout(() => {
       setIsTyping(true)
       
@@ -332,7 +344,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
         }, 2000)
       }, 1500)
     }, 500)
-  }, [addMessage])
+  }, [tutorialPendingStart, addMessage])
 
   const handleTutorialResponse = useCallback((userMessage: string) => {
     const message = userMessage.toLowerCase()
@@ -496,6 +508,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setTutorialStep(0)
     setIsTyping(false)
     setConversationPhase('initial')
+    setTutorialPendingStart(false)
     setOnboardingChannelTriggered(false)
     setOnboardingEmailSent(false)
     setHasInteractedWithMia(false)
@@ -516,6 +529,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     tutorialStep,
     isTyping,
     conversationPhase,
+    tutorialPendingStart,
     onboardingChannelTriggered,
     onboardingEmailSent,
     hasInteractedWithMia,
@@ -534,6 +548,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     clearMessages,
     getBotResponse,
     startTutorial,
+    startDeferredTutorialMessages,
     handleTutorialResponse,
     triggerOnboardingChannel,
     triggerOnboardingEmail,

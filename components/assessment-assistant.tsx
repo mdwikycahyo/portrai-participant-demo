@@ -33,8 +33,10 @@ export function AssessmentAssistant({
     tutorialStep,
     isTyping,
     conversationPhase,
+    tutorialPendingStart,
     handleTutorialResponse,
     resetTutorialProgress,
+    startDeferredTutorialMessages,
   } = useAssessmentAssistant()
   
   const [inputValue, setInputValue] = useState("")
@@ -93,6 +95,22 @@ export function AssessmentAssistant({
       onChatOpened()
     }
   }, [isOpen, onChatOpened])
+
+  // Trigger deferred tutorial messages when panel is opened for the first time
+  useEffect(() => {
+    if (isOpen && tutorialPendingStart) {
+      startDeferredTutorialMessages()
+    }
+  }, [isOpen, tutorialPendingStart, startDeferredTutorialMessages])
+
+  // Auto-fill input based on conversation phase
+  useEffect(() => {
+    if (conversationPhase === 'readiness_check' && !isTutorialActive && !isTyping) {
+      setInputValue("Ya, saya sudah siap untuk memulai")
+    } else if (conversationPhase === 'clarity_check' && !isTutorialActive && !isTyping) {
+      setInputValue("Ya, jelas")
+    }
+  }, [conversationPhase, isTutorialActive, isTyping])
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return
@@ -224,19 +242,27 @@ export function AssessmentAssistant({
               isTutorialActive || isTyping 
                 ? "Mohon tunggu..." 
                 : conversationPhase === 'readiness_check' 
-                  ? "Ketik jawaban Anda (Ya/Tidak)..."
+                  ? "Tekan Send untuk melanjutkan..."
                   : conversationPhase === 'clarity_check'
-                    ? "Ketik jawaban Anda (Ya, jelas/Tidak)..."
+                    ? "Tekan Send untuk melanjutkan..."
                     : "Ketik pesan atau ketik 'Help'..."
             }
             disabled={isTutorialActive || isTyping}
-            className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+              (conversationPhase === 'readiness_check' || conversationPhase === 'clarity_check') && !isTutorialActive && !isTyping
+                ? 'border-green-500 bg-green-900/20' 
+                : ''
+            }`}
           />
           <Button 
             onClick={handleSendMessage} 
             size="sm" 
             disabled={isTutorialActive || isTyping}
-            className="bg-blue-600 hover:bg-blue-700 text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+              (conversationPhase === 'readiness_check' || conversationPhase === 'clarity_check') && !isTutorialActive && !isTyping
+                ? 'bg-green-600 hover:bg-green-700' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
             <Send className="w-4 h-4" />
           </Button>
