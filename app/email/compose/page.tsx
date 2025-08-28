@@ -26,6 +26,7 @@ import {
 import { documentsData } from "@/lib/documents-data"
 import { cn } from "@/lib/utils"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { useToast } from "@/hooks/use-toast"
 import { useDocuments } from "@/contexts/documents-context"
 
 // Type for tracking selected documents and their pages
@@ -58,6 +59,7 @@ const shuffledTags = shuffleArray(allAvailableTags)
 export default function ComposePage() {
   const router = useRouter()
   const { triggerEmailReplyWithAttachment } = useAssessmentAssistant()
+  const { toast } = useToast()
   const { savedDocuments } = useDocuments()
   const [showContactSelection, setShowContactSelection] = useState(false)
   const [showDocumentSelection, setShowDocumentSelection] = useState(false)
@@ -164,7 +166,10 @@ export default function ComposePage() {
     }
     
     // Simulate email sending
-    alert(`Email berhasil dikirim ke ${recipient}!`)
+    toast({
+      title: "Email Terkirim",
+      description: `Email berhasil dikirim ke ${recipient}!`,
+    })
     
     // Navigate back to email list
     router.push("/email")

@@ -18,7 +18,13 @@ export function MessengerChannelList({
   onChannelSelect,
   onAddNewChannel,
 }: MessengerChannelListProps) {
-  const { onboardingChannelTriggered, hasInteractedWithMia } = useAssessmentAssistant()
+  const { 
+    onboardingChannelTriggered, 
+    hasInteractedWithMia,
+    onboardingHasNewMessages,
+    miaCompletionInProgress,
+    aryaHasNewMessages
+  } = useAssessmentAssistant()
   
   return (
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
@@ -47,7 +53,17 @@ export function MessengerChannelList({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="font-medium text-gray-900 truncate">{channel.name}</h3>
-                  {channel.id === "onboarding-channel" && onboardingChannelTriggered && !hasInteractedWithMia && (
+                  {channel.id === "onboarding-channel" && (
+                    // Show red dot when:
+                    // 1. Original logic: channel triggered and user hasn't interacted with Mia
+                    // 2. Mia completion messages are in progress
+                    // 3. Onboarding channel has new messages (from Mia or Arya)
+                    // 4. Arya has new messages
+                    (onboardingChannelTriggered && !hasInteractedWithMia) ||
+                    miaCompletionInProgress ||
+                    onboardingHasNewMessages ||
+                    aryaHasNewMessages
+                  ) && (
                     <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
                   )}
                 </div>

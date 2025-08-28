@@ -37,7 +37,7 @@ export default function DocumentEditorPage() {
   const documentId = searchParams.get("document")
   const { addDocument, updateDocument, getDocumentById } = useDocuments()
 
-  const [title, setTitle] = useState("Untitled Document")
+  const [title, setTitle] = useState("")
   const [content, setContent] = useState("<p></p>")
   const [isSaving, setIsSaving] = useState(false)
   const [activeFormats, setActiveFormats] = useState<string[]>([])
@@ -92,7 +92,7 @@ export default function DocumentEditorPage() {
     // Create a new document object
     const newDocument = {
       id: documentId || Date.now().toString(),
-      title: title || "Untitled Document",
+      title: title || "",
       type: "doc",
       lastModified: new Date().toLocaleString(),
       owner: "You",
@@ -131,7 +131,7 @@ export default function DocumentEditorPage() {
 
   const handleReset = () => {
     // Reset title and content to initial values
-    setTitle("Untitled Document")
+    setTitle("")
     setContent("<p></p>")
 
     // Update the editor content

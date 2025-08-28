@@ -40,6 +40,7 @@ const botResponses = {
   companyProfile: `Berikut adalah rangkuman dokumen "Profil Perusahaan Amboja":
 
 **Tentang Amboja:**
+
 Amboja adalah perusahaan teknologi yang berfokus pada pengembangan solusi digital inovatif untuk berbagai industri. Didirikan pada tahun 2018, perusahaan telah berkembang menjadi salah satu pemain utama dalam ekosistem teknologi Indonesia.
 
 **Visi:**
@@ -47,7 +48,7 @@ Menjadi perusahaan teknologi terdepan yang memberikan dampak positif bagi masyar
 
 **Misi:**
 - Pengembangan produk teknologi yang user-friendly
-- Pemberdayaan talenta lokal
+- Pemberdayaan talenta lokal  
 - Kontribusi terhadap transformasi digital Indonesia
 
 **Nilai-nilai Perusahaan:**
@@ -58,7 +59,7 @@ Menjadi perusahaan teknologi terdepan yang memberikan dampak positif bagi masyar
 - Kepedulian terhadap Pelanggan
 
 **Budaya Kerja:**
-Amboja menerapkan prinsip work-life balance, mendorong kreativitas dan inovasi, serta membangun lingkungan kerja yang inklusif dan supportif. Tim terdiri dari profesional muda yang passionate dan berpengalaman dari berbagai latar belakang. Perusahaan berkomitmen untuk terus mengembangkan kemampuan karyawan melalui program pelatihan, mentoring, dan kesempatan berkontribusi dalam proyek-proyek menantang.`,
+Tim terdiri dari profesional muda yang passionate dan berpengalaman dari berbagai latar belakang. Perusahaan berkomitmen untuk terus mengembangkan kemampuan karyawan melalui program pelatihan, mentoring, dan kesempatan berkontribusi dalam proyek-proyek menantang.`,
 }
 
 const tutorialMessages = [
@@ -117,6 +118,11 @@ interface AssessmentAssistantContextType {
   inboxEmails: Email[]
   missionBriefingStep: number
   isMissionBriefingActive: boolean
+  miaCompletionInProgress: boolean
+  aryaJoinedOnboarding: boolean
+  aryaHasNewMessages: boolean
+  onboardingHasNewMessages: boolean
+  messengerTypingState: boolean
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -204,6 +210,11 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [inboxEmails, setInboxEmails] = useState<Email[]>(defaultEmails)
   const [missionBriefingStep, setMissionBriefingStep] = useState(0)
   const [isMissionBriefingActive, setIsMissionBriefingActive] = useState(false)
+  const [miaCompletionInProgress, setMiaCompletionInProgress] = useState(false)
+  const [aryaJoinedOnboarding, setAryaJoinedOnboarding] = useState(false)
+  const [aryaHasNewMessages, setAryaHasNewMessages] = useState(false)
+  const [onboardingHasNewMessages, setOnboardingHasNewMessages] = useState(false)
+  const [messengerTypingState, setMessengerTypingState] = useState(false)
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -482,43 +493,88 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
 
   const triggerEmailReplyWithAttachment = useCallback(() => {
     setConversationStage('email_replied')
+    setMiaCompletionInProgress(true)
+    setOnboardingHasNewMessages(true)
     
     // Mia's completion messages
     const completionMessages = [
       "Halo Bapak Dwiky Cahyo, email dan dokumen rangkuman Anda sudah saya terima. Terima kasih banyak, misi pertama Anda selesai dengan sangat baik!",
       "Proses onboarding dari saya untuk sementara selesai.",
       "Sepertinya rangkuman Anda menarik perhatian salah satu pimpinan kita.",
-      "Setelah ini, President Director kita, Arya Prajida, akan segera menyapa Anda melalui fitur Chat ini untuk berdiskusi singkat dengan Anda."
+      "Setelah ini, President Director kita, Arya Prajida, akan bergabung dalam chat ini untuk berdiskusi singkat dengan Anda."
     ]
 
-    // Send messages with proper timing
+    // Send messages with proper timing and typing animations
     completionMessages.forEach((messageText, index) => {
       setTimeout(() => {
-        const message = {
-          id: `mia-completion-${Date.now()}-${index}`,
-          content: messageText,
-          senderName: "Mia Avira",
-          senderAvatar: "MA",
-          timestamp: new Date().toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }),
-          isUser: false,
-        }
+        // Show typing indicator
+        setMessengerTypingState(true)
         
-        addOnboardingMessage(message)
-        
-        // After the last message, set stage to completion and trigger president director
-        if (index === completionMessages.length - 1) {
-          setTimeout(() => {
-            setConversationStage('mia_completion')
-            // Trigger President Director introduction after a delay
+        // After typing delay, send the message
+        setTimeout(() => {
+          const message = {
+            id: `mia-completion-${Date.now()}-${index}`,
+            content: messageText,
+            senderName: "Mia Avira",
+            senderAvatar: "MA",
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+            isUser: false,
+          }
+          
+          addOnboardingMessage(message)
+          setMessengerTypingState(false)
+          
+          // After the last message, trigger Arya joining after 5 seconds
+          if (index === completionMessages.length - 1) {
+            setMiaCompletionInProgress(false)
             setTimeout(() => {
-              setPresidentDirectorChannelTriggered(true)
-            }, 3000) // 3 seconds after completion
-          }, 1000)
-        }
+              setConversationStage('mia_completion')
+              // Trigger Arya joining the Onboarding channel
+              setAryaJoinedOnboarding(true)
+              setAryaHasNewMessages(true)
+              setOnboardingHasNewMessages(true) // Keep this true for Arya's messages
+              
+              // Send Arya's introduction messages
+              const aryaMessages = [
+                "Halo Bapak Dwiky Cahyo, perkenalkan saya Arya Prajida, President Director di Amboja.",
+                "Senang sekali akhirnya bisa berkenalan dengan Anda dan tim kami hari ini.",
+                "Saya baru saja membaca rangkuman yang Anda buat tentang Amboja, dan terus terang saya sangat terkesan dengan perspektif Anda.",
+                "Apakah Anda ada waktu sekitar 5-10 menit sekarang untuk kita terhubung lewat **Voice Call** singkat?"
+              ]
+              
+              // Send Arya's messages with delays and typing animations
+              aryaMessages.forEach((aryaMessageText, aryaIndex) => {
+                setTimeout(() => {
+                  // Show typing indicator
+                  setMessengerTypingState(true)
+                  
+                  // After typing delay, send the message
+                  setTimeout(() => {
+                    const aryaMessage = {
+                      id: `arya-intro-${Date.now()}-${aryaIndex}`,
+                      content: aryaMessageText,
+                      senderName: "Arya Prajida",
+                      senderAvatar: "AP",
+                      timestamp: new Date().toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit", 
+                        hour12: true,
+                      }),
+                      isUser: false,
+                    }
+                    
+                    addOnboardingMessage(aryaMessage)
+                    setMessengerTypingState(false)
+                  }, 2000) // 2 second typing delay
+                }, (aryaIndex + 1) * 2500) // 2.5 seconds between Arya's messages
+              })
+            }, 5000) // 5 seconds after Mia's last message
+          }
+        }, 2000) // 2 second typing delay for each Mia message  
       }, (index + 1) * 3000) // 3 seconds between each message
     })
   }, [addOnboardingMessage])
@@ -706,6 +762,11 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setInboxEmails(defaultEmails) // Reset to default emails only
     setMissionBriefingStep(0)
     setIsMissionBriefingActive(false)
+    setMiaCompletionInProgress(false)
+    setAryaJoinedOnboarding(false)
+    setAryaHasNewMessages(false)
+    setOnboardingHasNewMessages(false)
+    setMessengerTypingState(false)
   }, [])
 
   const value: AssessmentAssistantContextType = {
@@ -728,6 +789,11 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     inboxEmails,
     missionBriefingStep,
     isMissionBriefingActive,
+    miaCompletionInProgress,
+    aryaJoinedOnboarding,
+    aryaHasNewMessages,
+    onboardingHasNewMessages,
+    messengerTypingState,
     addMessage,
     addUserMessage,
     addBotResponse,

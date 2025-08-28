@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { useToast } from "@/hooks/use-toast"
 import { ComposeDocumentSelection } from "@/components/compose-document-selection"
 import { documentsData } from "@/lib/documents-data"
 import { useRouter } from "next/navigation"
@@ -105,6 +106,7 @@ export function EmailContent({ emailId }: EmailContentProps) {
   const [attachedDocuments, setAttachedDocuments] = useState<SelectedDocumentsMap>({})
   const { savedDocuments } = useDocuments()
   const { markEmailAsRead, addDownloadedDocument, triggerEmailReplyWithAttachment } = useAssessmentAssistant()
+  const { toast } = useToast()
 
   const email = emailData[emailId as keyof typeof emailData]
 
@@ -162,7 +164,10 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
       addDownloadedDocument(document)
       
       // Simulate download
-      alert(`Dokumen "${attachmentName}" berhasil didownload dan ditambahkan ke Documents!`)
+      toast({
+        title: "Dokumen Berhasil Didownload",
+        description: `Dokumen "${attachmentName}" berhasil didownload dan ditambahkan ke Documents!`,
+      })
     }
   }
 
@@ -225,7 +230,11 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
   // Handle send email reply
   const handleSendReply = () => {
     if (!replyContent.trim()) {
-      alert("Harap isi pesan balasan!")
+      toast({
+        title: "Pesan Kosong",
+        description: "Harap isi pesan balasan!",
+        variant: "destructive",
+      })
       return
     }
 
@@ -239,7 +248,10 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
     }
     
     // Simulate email sending
-    alert(`Email balasan berhasil dikirim!`)
+    toast({
+      title: "Balasan Terkirim",
+      description: "Email balasan berhasil dikirim!",
+    })
     
     // Reset reply mode and content
     setReplyMode("none")

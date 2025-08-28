@@ -8,7 +8,25 @@ import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { onboardingChannelTriggered, onboardingEmailSent, hasInteractedWithMia, emailRead } = useAssessmentAssistant()
+  const { 
+    onboardingChannelTriggered, 
+    onboardingEmailSent, 
+    hasInteractedWithMia, 
+    emailRead,
+    onboardingHasNewMessages,
+    miaCompletionInProgress,
+    aryaHasNewMessages
+  } = useAssessmentAssistant()
+  
+  // Show messenger notification when:
+  // 1. Onboarding channel is triggered and user hasn't interacted with Mia yet (original logic)
+  // 2. Mia completion messages are in progress 
+  // 3. Onboarding channel has new messages (from Mia completion or Arya)
+  // 4. Arya has new messages
+  const hasMessengerNotification = (onboardingChannelTriggered && !hasInteractedWithMia) || 
+                                   miaCompletionInProgress || 
+                                   onboardingHasNewMessages || 
+                                   aryaHasNewMessages
   
   const navigation = [
     { name: "Beranda", href: "/home", icon: Home },
@@ -16,7 +34,7 @@ export function Sidebar() {
       name: "Messenger", 
       href: "/messenger", 
       icon: MessagesSquare, 
-      hasNotification: onboardingChannelTriggered && !hasInteractedWithMia
+      hasNotification: hasMessengerNotification
     },
     { 
       name: "Email", 

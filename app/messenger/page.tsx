@@ -38,7 +38,11 @@ function MessengerPageContent() {
     setConversationStage,
     presidentDirectorChannelTriggered,
     startMissionBriefing,
-    handleMissionBriefingResponse
+    handleMissionBriefingResponse,
+    aryaJoinedOnboarding,
+    aryaHasNewMessages,
+    onboardingHasNewMessages,
+    messengerTypingState
   } = useAssessmentAssistant()
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
@@ -273,6 +277,49 @@ function MessengerPageContent() {
       })
     }
   }, [presidentDirectorChannelTriggered, presidentDirectorChannelAdded])
+
+  // Handle Arya joining the onboarding channel
+  useEffect(() => {
+    if (aryaJoinedOnboarding) {
+      setChannels((prevChannels) => {
+        return prevChannels.map(channel => {
+          if (channel.id === "onboarding-channel") {
+            // Check if Arya is already in the participants list
+            const hasArya = channel.participants.some(p => p.name === "Arya Prajida")
+            
+            if (!hasArya) {
+              // Add Arya as a participant
+              const aryaParticipant = {
+                name: "Arya Prajida",
+                avatar: "AP",
+                role: "President Director",
+                email: "arya.prajida@amboja.com",
+              }
+              
+              return {
+                ...channel,
+                participants: [...channel.participants, aryaParticipant],
+                messages: onboardingMessages, // Use the latest messages from context
+                lastActivity: new Date().toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                }),
+              }
+            }
+          }
+          return channel
+        })
+      })
+    }
+  }, [aryaJoinedOnboarding, onboardingMessages])
+
+  // Sync typing state from context (for onboarding channel messages)
+  useEffect(() => {
+    if (selectedChannelId === "onboarding-channel") {
+      setIsTyping(messengerTypingState)
+    }
+  }, [messengerTypingState, selectedChannelId])
 
   const handleChannelSelect = (channelId: string) => {
     setSelectedChannelId(channelId)
