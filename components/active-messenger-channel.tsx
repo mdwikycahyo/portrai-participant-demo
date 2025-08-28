@@ -24,7 +24,7 @@ interface ActiveMessengerChannelProps {
   onSendMessage: (channelId: string, message: any) => void
   onOnboardingTrigger: () => void
   isTyping: boolean
-  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion'
+  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_confirmed' | 'mission_briefing' | 'task_readiness_check' | 'task_list_delivered' | 'task_clarity_check' | 'ai_hint_given' | 'mission_started' | 'email_replied' | 'mia_completion'
 }
 
 export function ActiveMessengerChannel({ 
@@ -99,8 +99,18 @@ export function ActiveMessengerChannel({
     const shouldAutoFillFeedback = (message: string) => 
       /Bagaimana sejauh ini.*Apakah sesi perkenalan.*membantu/i.test(message)
 
-    const shouldAutoFillEmailConfirmation = (message: string) => 
-      /Bisa tolong cek.*kabari.*fitur chat.*terima/i.test(message)
+    const shouldAutoFillEmailConfirmation = (message: string) => {
+      const result = /Bisa tolong cek.*kabari.*fitur chat.*terima/i.test(message)
+      console.log('Debug - Auto-fill email confirmation check:', message, result)
+      return result
+    }
+
+    // Mission briefing auto-fill patterns
+    const shouldAutoFillTaskReadiness = (message: string) => 
+      /Apakah Anda siap untuk melihat rincian tugasnya/i.test(message)
+
+    const shouldAutoFillTaskClarity = (message: string) => 
+      /Bagaimana.*apakah keempat langkah.*cukup jelas/i.test(message)
 
     // Check if we should auto-fill based on the latest message
     if (shouldAutoFillFeedback(latestMiaMessage.content)) {
@@ -110,6 +120,16 @@ export function ActiveMessengerChannel({
       setLastProcessedMessageId(latestMiaMessage.id)
     } else if (shouldAutoFillEmailConfirmation(latestMiaMessage.content)) {
       const autoResponse = "Ya, saya sudah menerima emailnya. Terima kasih."
+      setMessageInput(autoResponse)
+      setIsAutoFilled(true)
+      setLastProcessedMessageId(latestMiaMessage.id)
+    } else if (shouldAutoFillTaskReadiness(latestMiaMessage.content)) {
+      const autoResponse = "Ya, saya siap."
+      setMessageInput(autoResponse)
+      setIsAutoFilled(true)
+      setLastProcessedMessageId(latestMiaMessage.id)
+    } else if (shouldAutoFillTaskClarity(latestMiaMessage.content)) {
+      const autoResponse = "Cukup jelas."
       setMessageInput(autoResponse)
       setIsAutoFilled(true)
       setLastProcessedMessageId(latestMiaMessage.id)

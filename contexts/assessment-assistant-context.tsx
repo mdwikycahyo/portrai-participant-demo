@@ -72,6 +72,21 @@ const tutorialContinuationMessages = [
   "Konsep ini cukup jelas ya, Bapak?"
 ]
 
+// Mission briefing messages for Mia Avira (Messages 7-13)
+const missionBriefingMessages = [
+  "Baik, terima kasih konfirmasinya!",
+  "Oke, misi Anda sederhana saja. Di email itu ada lampiran bernama **Profil Perusahaan Amboja**.",
+  "Apakah Anda siap untuk melihat rincian tugasnya?",
+  `Bagus. Berikut adalah tugas Anda:
+1.  **Download** lampiran tersebut.
+2.  Lalu, **buka dan pelajari** isinya melalui menu **Document**.
+3.  Setelah itu, **buat sebuah dokumen baru** dengan judul **'Apa yang Saya Ketahui Tentang Amboja'**. Isinya adalah rangkuman singkat pemahaman Anda tentang perusahaan kita.
+4.  Terakhir, **balas email saya** tadi dan **lampirkan** dokumen rangkuman yang sudah Anda buat.`,
+  "Bagaimana, apakah keempat langkah tersebut cukup jelas untuk Anda?",
+  "Sedikit tips dari saya: Jangan ragu untuk minta bantuan AI Assistant kita untuk merangkum poin-penting dari dokumen tersebut. Justru itu adalah salah satu tujuan platform PortrAI ini, yaitu membantu Anda mengolah informasi dengan cepat.",
+  "Santai saja, tidak ada jawaban benar atau salah. Selamat mengerjakan misi pertama Anda!"
+]
+
 interface Email {
   id: string
   sender: string
@@ -97,9 +112,11 @@ interface AssessmentAssistantContextType {
   emailRead: boolean
   downloadedDocuments: DocumentFile[]
   onboardingMessages: any[]
-  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion'
+  conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_confirmed' | 'mission_briefing' | 'task_readiness_check' | 'task_list_delivered' | 'task_clarity_check' | 'ai_hint_given' | 'mission_started' | 'email_replied' | 'mia_completion'
   presidentDirectorChannelTriggered: boolean
   inboxEmails: Email[]
+  missionBriefingStep: number
+  isMissionBriefingActive: boolean
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -117,10 +134,12 @@ interface AssessmentAssistantContextType {
   markEmailAsRead: () => void
   addDownloadedDocument: (document: DocumentFile) => void
   addOnboardingMessage: (message: any) => void
-  setConversationStage: (stage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion') => void
+  setConversationStage: (stage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_confirmed' | 'mission_briefing' | 'task_readiness_check' | 'task_list_delivered' | 'task_clarity_check' | 'ai_hint_given' | 'mission_started' | 'email_replied' | 'mia_completion') => void
   resetTutorialProgress: () => void
   triggerEmailReplyWithAttachment: () => void
   triggerPresidentDirectorChannel: () => void
+  startMissionBriefing: (handleSendMessage: (channelId: string, message: any) => void) => void
+  handleMissionBriefingResponse: (userMessage: string, handleSendMessage: (channelId: string, message: any) => void) => void
 }
 
 const AssessmentAssistantContext = createContext<AssessmentAssistantContextType | undefined>(undefined)
@@ -180,9 +199,11 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [emailRead, setEmailRead] = useState(false)
   const [downloadedDocuments, setDownloadedDocuments] = useState<DocumentFile[]>([])
   const [onboardingMessages, setOnboardingMessages] = useState(onboardingChannel.messages)
-  const [conversationStage, setConversationStage] = useState<'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_replied' | 'mia_completion'>('initial')
+  const [conversationStage, setConversationStage] = useState<'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_confirmed' | 'mission_briefing' | 'task_readiness_check' | 'task_list_delivered' | 'task_clarity_check' | 'ai_hint_given' | 'mission_started' | 'email_replied' | 'mia_completion'>('initial')
   const [presidentDirectorChannelTriggered, setPresidentDirectorChannelTriggered] = useState(false)
   const [inboxEmails, setInboxEmails] = useState<Email[]>(defaultEmails)
+  const [missionBriefingStep, setMissionBriefingStep] = useState(0)
+  const [isMissionBriefingActive, setIsMissionBriefingActive] = useState(false)
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -502,6 +523,170 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     })
   }, [addOnboardingMessage])
 
+  const startMissionBriefing = useCallback((handleSendMessage: (channelId: string, message: any) => void) => {
+    console.log('Debug - startMissionBriefing called!')
+    setConversationStage('email_confirmed')
+    setIsMissionBriefingActive(true)
+    setMissionBriefingStep(0)
+    
+    // Send the first message immediately (Message 7: "Baik, terima kasih konfirmasinya!")
+    setTimeout(() => {
+      const message = {
+        id: `mission-briefing-${Date.now()}-0`,
+        content: missionBriefingMessages[0],
+        senderName: "Mia Avira",
+        senderAvatar: "MA",
+        timestamp: new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        isUser: false,
+      }
+      
+      console.log('Debug - Adding first mission briefing message:', message)
+      handleSendMessage("onboarding-channel", message)
+      setMissionBriefingStep(1)
+      
+      // Send the second message after a delay (Message 8)
+      setTimeout(() => {
+        const message2 = {
+          id: `mission-briefing-${Date.now()}-1`,
+          content: missionBriefingMessages[1],
+          senderName: "Mia Avira",
+          senderAvatar: "MA",
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          isUser: false,
+        }
+        
+        handleSendMessage("onboarding-channel", message2)
+        setMissionBriefingStep(2)
+        
+        // Send the third message (Message 9: readiness check)
+        setTimeout(() => {
+          const message3 = {
+            id: `mission-briefing-${Date.now()}-2`,
+            content: missionBriefingMessages[2],
+            senderName: "Mia Avira",
+            senderAvatar: "MA",
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+            isUser: false,
+          }
+          
+          handleSendMessage("onboarding-channel", message3)
+          setConversationStage('task_readiness_check')
+          setIsMissionBriefingActive(false) // Allow user to respond
+          setMissionBriefingStep(3)
+        }, 2500)
+      }, 2000)
+    }, 1000)
+  }, [])
+
+  const handleMissionBriefingResponse = useCallback((userMessage: string, handleSendMessage: (channelId: string, message: any) => void) => {
+    console.log('Debug - handleMissionBriefingResponse called with:', userMessage)
+    console.log('Debug - Current conversationStage:', conversationStage)
+    const message = userMessage.toLowerCase()
+    const isPositiveResponse = message.includes("ya") || message.includes("iya") || message.includes("baik") || message.includes("setuju") || message.includes("siap") || message.includes("jelas") || message.includes("cukup")
+    console.log('Debug - isPositiveResponse:', isPositiveResponse)
+    
+    if (conversationStage === 'task_readiness_check' && isPositiveResponse) {
+      // Continue to task list (Message 10)
+      setConversationStage('mission_briefing')
+      setIsMissionBriefingActive(true)
+      
+      setTimeout(() => {
+        const taskListMessage = {
+          id: `mission-briefing-${Date.now()}-3`,
+          content: missionBriefingMessages[3],
+          senderName: "Mia Avira",
+          senderAvatar: "MA",
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          isUser: false,
+        }
+        
+        handleSendMessage("onboarding-channel", taskListMessage)
+        setMissionBriefingStep(4)
+        
+        // Send clarity check message (Message 11)
+        setTimeout(() => {
+          const clarityMessage = {
+            id: `mission-briefing-${Date.now()}-4`,
+            content: missionBriefingMessages[4],
+            senderName: "Mia Avira",
+            senderAvatar: "MA",
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+            isUser: false,
+          }
+          
+          handleSendMessage("onboarding-channel", clarityMessage)
+          setConversationStage('task_clarity_check')
+          setIsMissionBriefingActive(false) // Allow user to respond
+          setMissionBriefingStep(5)
+        }, 3000)
+      }, 1500)
+    } else if (conversationStage === 'task_clarity_check' && isPositiveResponse) {
+      console.log('Debug - Task clarity confirmed, sending final messages!')
+      // Send AI hint and final encouragement (Messages 12 & 13)
+      setConversationStage('ai_hint_given')
+      setIsMissionBriefingActive(true)
+      
+      setTimeout(() => {
+        const aiHintMessage = {
+          id: `mission-briefing-${Date.now()}-5`,
+          content: missionBriefingMessages[5],
+          senderName: "Mia Avira",
+          senderAvatar: "MA",
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          isUser: false,
+        }
+        
+        handleSendMessage("onboarding-channel", aiHintMessage)
+        setMissionBriefingStep(6)
+        
+        // Send final encouragement message
+        setTimeout(() => {
+          const finalMessage = {
+            id: `mission-briefing-${Date.now()}-6`,
+            content: missionBriefingMessages[6],
+            senderName: "Mia Avira",
+            senderAvatar: "MA",
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+            isUser: false,
+          }
+          
+          handleSendMessage("onboarding-channel", finalMessage)
+          setConversationStage('mission_started')
+          setIsMissionBriefingActive(false)
+          setMissionBriefingStep(7) // All messages sent
+        }, 2500)
+      }, 2000)
+    }
+  }, [conversationStage])
+
   const resetTutorialProgress = useCallback(() => {
     setMessages(initialMessages)
     setIsTutorialActive(false)
@@ -519,6 +704,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setPresidentDirectorChannelTriggered(false)
     setHasNewMessage(false)
     setInboxEmails(defaultEmails) // Reset to default emails only
+    setMissionBriefingStep(0)
+    setIsMissionBriefingActive(false)
   }, [])
 
   const value: AssessmentAssistantContextType = {
@@ -539,6 +726,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     conversationStage,
     presidentDirectorChannelTriggered,
     inboxEmails,
+    missionBriefingStep,
+    isMissionBriefingActive,
     addMessage,
     addUserMessage,
     addBotResponse,
@@ -560,6 +749,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     resetTutorialProgress,
     triggerEmailReplyWithAttachment,
     triggerPresidentDirectorChannel,
+    startMissionBriefing,
+    handleMissionBriefingResponse,
   }
 
   return (

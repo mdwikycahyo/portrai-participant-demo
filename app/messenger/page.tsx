@@ -36,7 +36,9 @@ function MessengerPageContent() {
     conversationStage,
     addOnboardingMessage,
     setConversationStage,
-    presidentDirectorChannelTriggered
+    presidentDirectorChannelTriggered,
+    startMissionBriefing,
+    handleMissionBriefingResponse
   } = useAssessmentAssistant()
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
@@ -399,8 +401,12 @@ function MessengerPageContent() {
     const isFeedbackResponse = /\b(ya|iya|baik|setuju|bagus|membantu|sangat|positif|terbantu|siap)\b/i.test(userMessage.toLowerCase()) && 
                               conversationStage === 'waiting_for_response'
     
-    const isEmailConfirmation = /\b(ya.*terima|sudah.*terima|terima.*email|email.*terima|dapat.*email|email.*dapat)\b/i.test(userMessage.toLowerCase()) &&
-                               conversationStage === 'mission_phase'
+    const emailConfirmationRegexTest = /\b(ya.*terima|sudah.*terima|terima.*email|email.*terima|dapat.*email|email.*dapat)\b/i.test(userMessage.toLowerCase())
+    const isEmailConfirmation = emailConfirmationRegexTest && (conversationStage === 'mission_phase' || conversationStage === 'responded')
+    
+    console.log('Debug - emailConfirmationRegexTest:', emailConfirmationRegexTest)
+    console.log('Debug - conversationStage === mission_phase:', conversationStage === 'mission_phase')
+    console.log('Debug - conversationStage === responded:', conversationStage === 'responded')
     
     // Use persisted messages only for duplicate checking
     const messagesToCheck = channelId === "onboarding-channel" ? onboardingMessages : (channels.find(c => c.id === channelId)?.messages || [])
@@ -414,7 +420,9 @@ function MessengerPageContent() {
     
     // Handle email confirmation response
     if (isEmailConfirmation && !hasEmailConfirmationMessage) {
-      handleEmailConfirmationResponse(channelId)
+      console.log('Debug - Triggering mission briefing!')
+      // Use the new mission briefing system instead
+      startMissionBriefing(handleSendMessage)
       return
     }
     
@@ -521,6 +529,19 @@ function MessengerPageContent() {
           }, 2000) // 2 second typing delay
         }, index * 3500 + 1500) // Stagger messages by 3.5 seconds, start after 1.5 seconds
       })
+    }
+    
+    // Handle mission briefing responses (task readiness and clarity checks)
+    const isMissionBriefingResponse = conversationStage === 'task_readiness_check' || conversationStage === 'task_clarity_check'
+    const isPositiveResponse = /\b(ya|iya|baik|setuju|siap|jelas|cukup)\b/i.test(userMessage.toLowerCase())
+    
+    console.log('Debug - isMissionBriefingResponse:', isMissionBriefingResponse)
+    console.log('Debug - Mission briefing isPositiveResponse:', isPositiveResponse)
+    
+    if (isMissionBriefingResponse && isPositiveResponse) {
+      console.log('Debug - Calling handleMissionBriefingResponse')
+      handleMissionBriefingResponse(userMessage, handleSendMessage)
+      return
     }
   }
 
