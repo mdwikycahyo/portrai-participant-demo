@@ -130,6 +130,8 @@ interface AssessmentAssistantContextType {
   aryaPhase1Complete: boolean
   aryaPhase2Triggered: boolean
   messengerTypingState: { isTyping: boolean; typingUser?: string }
+  documentEditorPage: string
+  documentEditorTitle: string
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -160,6 +162,7 @@ interface AssessmentAssistantContextType {
   addAryaMessage: (message: any) => void
   triggerAryaPhase2: () => void
   setTypingState: (state: { isTyping: boolean; typingUser?: string }) => void
+  setDocumentEditorState: (page: string, title: string) => void
 }
 
 const AssessmentAssistantContext = createContext<AssessmentAssistantContextType | undefined>(undefined)
@@ -236,6 +239,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [aryaPhase1Complete, setAryaPhase1Complete] = useState(false)
   const [aryaPhase2Triggered, setAryaPhase2Triggered] = useState(false)
   const [messengerTypingState, setMessengerTypingState] = useState<{ isTyping: boolean; typingUser?: string }>({ isTyping: false })
+  const [documentEditorPage, setDocumentEditorPage] = useState('')
+  const [documentEditorTitle, setDocumentEditorTitle] = useState('')
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -628,6 +633,11 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setMessengerTypingState(state)
   }, [])
 
+  const setDocumentEditorState = useCallback((page: string, title: string) => {
+    setDocumentEditorPage(page)
+    setDocumentEditorTitle(title)
+  }, [])
+
   const triggerMiaCompletionPhase2 = useCallback(() => {
     if (!miaCompletionPhase1Complete || miaCompletionPhase2Triggered) return // Only run if phase 1 is complete and phase 2 hasn't been triggered yet
     
@@ -956,6 +966,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     aryaPhase1Complete,
     aryaPhase2Triggered,
     messengerTypingState,
+    documentEditorPage,
+    documentEditorTitle,
     addMessage,
     addUserMessage,
     addBotResponse,
@@ -986,6 +998,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     addAryaMessage,
     triggerAryaPhase2,
     setTypingState,
+    setDocumentEditorState,
   }
 
   return (

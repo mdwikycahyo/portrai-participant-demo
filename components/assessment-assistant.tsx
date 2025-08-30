@@ -38,6 +38,8 @@ export function AssessmentAssistant({
     handleTutorialResponse,
     resetTutorialProgress,
     startDeferredTutorialMessages,
+    documentEditorPage,
+    documentEditorTitle,
   } = useAssessmentAssistant()
   
   const [inputValue, setInputValue] = useState("")
@@ -106,14 +108,22 @@ export function AssessmentAssistant({
     }
   }, [isOpen, tutorialPendingStart, startDeferredTutorialMessages])
 
-  // Auto-fill input based on conversation phase
+  // Auto-fill input based on conversation phase and document editor conditions
   useEffect(() => {
     if (conversationPhase === 'readiness_check' && !isTutorialActive && !isTyping) {
       setInputValue("Ya, saya sudah siap untuk memulai")
     } else if (conversationPhase === 'clarity_check' && !isTutorialActive && !isTyping) {
       setInputValue("Ya, jelas")
+    } else if (
+      documentEditorPage === '/documents/editor' && 
+      documentEditorTitle === 'Apa yang Saya Ketahui Tentang Amboja' && 
+      !isTutorialActive && 
+      !isTyping &&
+      isOpen
+    ) {
+      setInputValue("Bisakah Anda rangkum profil perusahaan Amboja?")
     }
-  }, [conversationPhase, isTutorialActive, isTyping])
+  }, [conversationPhase, isTutorialActive, isTyping, documentEditorPage, documentEditorTitle, isOpen])
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return

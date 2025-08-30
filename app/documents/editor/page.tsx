@@ -30,12 +30,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Layout } from "@/components/layout"
 import { useDocuments } from "@/contexts/documents-context"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 export default function DocumentEditorPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const documentId = searchParams.get("document")
   const { addDocument, updateDocument, getDocumentById } = useDocuments()
+  const { setDocumentEditorState } = useAssessmentAssistant()
 
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("<p></p>")
@@ -54,6 +56,16 @@ export default function DocumentEditorPage() {
       }
     }
   }, [documentId, getDocumentById])
+
+  // Update Assessment Assistant state when component mounts and when title changes
+  useEffect(() => {
+    setDocumentEditorState('/documents/editor', title)
+
+    // Cleanup function to clear the state when component unmounts
+    return () => {
+      setDocumentEditorState('', '')
+    }
+  }, [title, setDocumentEditorState])
 
   // Initialize editor with content
   useEffect(() => {
