@@ -12,7 +12,6 @@ import { Layout } from "@/components/layout"
 type ConversationMessage = {
   speaker: string
   text: string
-  waitForResponse?: boolean
 }
 
 // Mock contact data with Ezra Kaell as contactId "1"
@@ -130,52 +129,71 @@ export default function ActiveCallPage() {
     }
   }, [contact])
 
-  // Arya Prajida conversation flow
+  // Arya Prajida conversation flow - Fully automated with user responses
   const getAryaConversationData = (): ConversationMessage[] => [
     {
       speaker: "Arya Prajida",
       text: "Halo, Bapak Dwiky Cahyo. Saya Arya Prajida. Apa kabar?",
-      waitForResponse: true,
+    },
+    {
+      speaker: "Dwiky Cahyo",
+      text: "Halo Pak Arya, kabar baik. Terima kasih sudah meluangkan waktu untuk call ini.",
     },
     {
       speaker: "Arya Prajida", 
       text: "Pertama-tama, saya mau ucapkan selamat datang secara pribadi di keluarga besar Amboja. Senang sekali Anda sudah bergabung bersama kami.",
-      waitForResponse: false,
+    },
+    {
+      speaker: "Dwiky Cahyo",
+      text: "Terima kasih banyak Pak Arya. Saya juga sangat senang bisa bergabung di Amboja.",
     },
     {
       speaker: "Arya Prajida",
       text: "Santai saja ya, ini sesi ngobrol ringan. Saya tidak akan memberikan tes, hehe. Saya hanya ingin kenal lebih dekat dengan anggota tim terbaru kami.",
-      waitForResponse: false,
+    },
+    {
+      speaker: "Dwiky Cahyo",
+      text: "Haha, baik Pak. Siap untuk ngobrol santai.",
     },
     {
       speaker: "Arya Prajida",
       text: "Saya sudah melihat hasil 'misi pertama' Anda, yaitu dokumen berjudul 'Apa yang Saya Ketahui Tentang Amboja'. Terima kasih banyak sudah meluangkan waktu untuk menyiapkannya dengan baik.",
-      waitForResponse: false,
+    },
+    {
+      speaker: "Dwiky Cahyo",
+      text: "Sama-sama Pak. Saya berusaha membuat rangkuman yang comprehensive tentang Amboja.",
     },
     {
       speaker: "Arya Prajida", 
       text: "Nah, saya tidak akan meminta Anda mengulang isi dokumen itu. Saya lebih tertarik dengan perspektif pribadi Anda.",
-      waitForResponse: false,
     },
     {
       speaker: "Arya Prajida",
       text: "Dari semua hal yang Anda baca dan rangkum, apa satu hal spesifik yang paling membuat Anda bersemangat atau paling 'klik' dengan Anda tentang Amboja? Coba ceritakan sedikit.",
-      waitForResponse: true,
+    },
+    {
+      speaker: "Dwiky Cahyo",
+      text: "Yang paling menarik bagi saya adalah fokus Amboja pada inovasi teknologi yang berdampak sosial. Bagaimana perusahaan tidak hanya mencari profit, tapi juga menciptakan solusi yang bermanfaat untuk masyarakat luas. Ini sejalan dengan nilai-nilai pribadi saya tentang meaningful work.",
     },
     {
       speaker: "Arya Prajida",
       text: "Itu poin yang sangat bagus. Saya senang Anda menyoroti hal tersebut.",
-      waitForResponse: false,
     },
     {
       speaker: "Arya Prajida", 
       text: "Baik, saya rasa sesi kita cukup sampai di sini saja.",
-      waitForResponse: false,
+    },
+    {
+      speaker: "Dwiky Cahyo",
+      text: "Terima kasih untuk waktu dan kesempatannya Pak Arya.",
     },
     {
       speaker: "Arya Prajida",
       text: "Sekali lagi, selamat datang di tim. Pintu saya selalu terbuka untuk ide-ide baru, dan selamat berkarya di Amboja.",
-      waitForResponse: false,
+    },
+    {
+      speaker: "Dwiky Cahyo",
+      text: "Terima kasih banyak Pak Arya. Sampai jumpa!",
     },
   ]
 
@@ -239,13 +257,8 @@ export default function ActiveCallPage() {
           },
         ])
         
-        // Check if this message requires user response (Arya Prajida flow)
-        if (isAryaCall && currentMessage.waitForResponse) {
-          setWaitingForUserResponse(true)
-          setConversationStep(currentMessageIndex)
-        } else {
-          setCurrentMessageIndex((prev) => prev + 1)
-        }
+        // Continue to next message automatically (fully automated)
+        setCurrentMessageIndex((prev) => prev + 1)
         setCurrentCharIndex(0)
       }
     }, 50) // Adjust speed of typing effect
