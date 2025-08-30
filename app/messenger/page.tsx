@@ -45,7 +45,12 @@ function MessengerPageContent() {
     messengerTypingState,
     clearMiaCompletionNotifications,
     clearAryaNotifications,
-    triggerMiaCompletionPhase2
+    triggerMiaCompletionPhase2,
+    miaMessages,
+    aryaMessages,
+    triggerAryaPhase2,
+    addMiaMessage,
+    setTypingState
   } = useAssessmentAssistant()
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
@@ -206,7 +211,7 @@ function MessengerPageContent() {
           // Create a new onboarding channel with persisted messages
           const newOnboardingChannel = {
             ...onboardingChannel,
-            messages: onboardingMessages.map((message, index) => {
+            messages: getMessagesForParticipant(selectedParticipant).map((message, index) => {
               // Only update timestamp for the initial message if it doesn't have one
               if (!message.timestamp) {
                 const currentTime = new Date()
@@ -302,7 +307,7 @@ function MessengerPageContent() {
               return {
                 ...channel,
                 participants: [...channel.participants, aryaParticipant],
-                messages: onboardingMessages, // Use the latest messages from context
+                messages: getMessagesForParticipant(selectedParticipant), // Use the latest messages from context
                 lastActivity: new Date().toLocaleTimeString("en-US", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -315,7 +320,7 @@ function MessengerPageContent() {
         })
       })
     }
-  }, [aryaJoinedOnboarding, onboardingMessages])
+  }, [aryaJoinedOnboarding, miaMessages, aryaMessages, selectedParticipant])
 
   // Sync onboarding messages from context to channel messages
   useEffect(() => {
@@ -324,27 +329,41 @@ function MessengerPageContent() {
         if (channel.id === "onboarding-channel") {
           return {
             ...channel,
-            messages: onboardingMessages, // Always sync the latest messages from context
-            lastActivity: onboardingMessages.length > 0 
-              ? onboardingMessages[onboardingMessages.length - 1].timestamp
+            messages: getMessagesForParticipant(selectedParticipant), // Always sync the latest messages from context
+            lastActivity: getMessagesForParticipant(selectedParticipant).length > 0 
+              ? getMessagesForParticipant(selectedParticipant)[getMessagesForParticipant(selectedParticipant).length - 1].timestamp
               : channel.lastActivity,
           }
         }
         return channel
       })
     })
-  }, [onboardingMessages])
+  }, [miaMessages, aryaMessages, selectedParticipant])
 
   // Sync typing state from context (for onboarding channel messages)
   useEffect(() => {
     if (selectedChannelId === "onboarding-channel") {
-      setIsTyping(messengerTypingState)
+      setIsTyping(messengerTypingState.isTyping)
     }
   }, [messengerTypingState, selectedChannelId])
 
   const handleChannelSelect = (channelId: string) => {
     setSelectedChannelId(channelId)
     setSelectedParticipant(null) // Reset participant selection when changing channels
+  }
+
+  // Helper function to get messages based on selected participant
+  const getMessagesForParticipant = (participant: Participant | null) => {
+    if (!participant) return onboardingMessages
+    
+    if (selectedChannelId === "onboarding-channel") {
+      if (participant.name === "Mia Avira") {
+        return miaMessages
+      } else if (participant.name === "Arya Prajida") {
+        return aryaMessages
+      }
+    }
+    return onboardingMessages
   }
 
   const handleSelectParticipant = (participant: Participant) => {
@@ -358,6 +377,8 @@ function MessengerPageContent() {
         triggerMiaCompletionPhase2()
       } else if (participant.name === "Arya Prajida") {
         clearAryaNotifications()
+        // Trigger Phase 2 messages when user opens Arya's chat
+        triggerAryaPhase2()
       }
     }
   }
@@ -456,7 +477,12 @@ function MessengerPageContent() {
 
     // Also persist onboarding messages separately
     if (channelId === "onboarding-channel") {
-      addOnboardingMessage(message)
+      // Add to the appropriate message array based on selected participant
+      if (selectedParticipant?.name === "Mia Avira") {
+        addMiaMessage(message)
+      } else {
+        addOnboardingMessage(message)
+      }
     }
 
     // Handle onboarding flow responses from Mia Avira - moved outside setState
@@ -488,7 +514,7 @@ function MessengerPageContent() {
     console.log('Debug - conversationStage === responded:', conversationStage === 'responded')
     
     // Use persisted messages only for duplicate checking
-    const messagesToCheck = channelId === "onboarding-channel" ? onboardingMessages : (channels.find(c => c.id === channelId)?.messages || [])
+    const messagesToCheck = channelId === "onboarding-channel" ? getMessagesForParticipant(selectedParticipant) : (channels.find(c => c.id === channelId)?.messages || [])
     const hasThankYouMessage = messagesToCheck.some(msg => msg.content.includes("Baik, terima kasih atas jawaban anda"))
     const hasEmailConfirmationMessage = messagesToCheck.some(msg => msg.content.includes("Baik, terima kasih konfirmasinya"))
     
@@ -689,14 +715,24 @@ function MessengerPageContent() {
 
   // Handle onboarding trigger when Mia is selected
   const handleOnboardingTrigger = () => {
-    if (onboardingTriggered) return // Already triggered
+    // Check if we already have both welcome and question messages in persisted state
+    const currentMessages = getMessagesForParticipant(selectedParticipant)
+    const hasWelcomeMessage = currentMessages.some(msg => msg.content.includes("Selamat datang di Amboja"))
+    const hasQuestionMessage = currentMessages.some(msg => msg.content.includes("Bagaimana sejauh ini"))
     
-    // Check if we already have the welcome and question messages in persisted state
-    const hasWelcomeMessage = onboardingMessages.some(msg => msg.content.includes("Selamat datang di Amboja"))
-    const hasQuestionMessage = onboardingMessages.some(msg => msg.content.includes("Bagaimana sejauh ini"))
+    console.log('Tutorial check:', { hasWelcomeMessage, hasQuestionMessage, messagesCount: currentMessages.length, onboardingTriggered })
     
-    if (hasWelcomeMessage && hasQuestionMessage) return // Messages already added
+    if (hasWelcomeMessage && hasQuestionMessage) {
+      console.log('Both tutorial messages already exist, skipping')
+      return // Messages already added
+    }
     
+    if (onboardingTriggered) {
+      console.log('Tutorial already triggered, skipping')
+      return // Already triggered
+    }
+    
+    console.log('Starting tutorial flow')
     setOnboardingTriggered(true)
     
     // Clear any existing timeouts
@@ -725,8 +761,9 @@ function MessengerPageContent() {
     // Simulate typing for each message
     remainingMessages.forEach((message, index) => {
       const timeout1 = setTimeout(() => {
-        // Start typing
-        setIsTyping(true)
+        console.log(`Starting tutorial message ${index + 1}:`, message.content)
+        // Start typing indicator for tutorial messages (Mia)
+        setTypingState({ isTyping: true, typingUser: "Mia Avira" })
         
         // After typing delay, add message
         const timeout2 = setTimeout(() => {
@@ -738,8 +775,10 @@ function MessengerPageContent() {
               hour12: true,
             }),
           }
-          handleSendMessage("onboarding-channel", messageWithTimestamp)
-          setIsTyping(false)
+          console.log(`Sending tutorial message ${index + 1}:`, messageWithTimestamp)
+          // Add message directly to Mia's message array since these are from Mia
+          addMiaMessage(messageWithTimestamp)
+          setTypingState({ isTyping: false })
           
           // Update conversation stage when the question is asked
           if (index === 1) { // The second message in the array (index 1) is the question
@@ -814,10 +853,12 @@ function MessengerPageContent() {
                   onSendMessage={handleSendMessage}
                   onOnboardingTrigger={handleOnboardingTrigger}
                   isTyping={isTyping}
+                  typingUser={messengerTypingState.typingUser}
                   conversationStage={conversationStage}
                   clearMiaCompletionNotifications={clearMiaCompletionNotifications}
                   clearAryaNotifications={clearAryaNotifications}
                   triggerMiaCompletionPhase2={triggerMiaCompletionPhase2}
+                  getMessagesForParticipant={getMessagesForParticipant}
                 />
               )}
             </div>

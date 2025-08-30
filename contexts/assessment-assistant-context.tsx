@@ -113,6 +113,8 @@ interface AssessmentAssistantContextType {
   emailRead: boolean
   downloadedDocuments: DocumentFile[]
   onboardingMessages: any[]
+  miaMessages: any[]
+  aryaMessages: any[]
   conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_confirmed' | 'mission_briefing' | 'task_readiness_check' | 'task_list_delivered' | 'task_clarity_check' | 'ai_hint_given' | 'mission_started' | 'email_replied' | 'mia_completion'
   presidentDirectorChannelTriggered: boolean
   inboxEmails: Email[]
@@ -125,7 +127,9 @@ interface AssessmentAssistantContextType {
   miaCompletionHasNewMessages: boolean
   miaCompletionPhase1Complete: boolean
   miaCompletionPhase2Triggered: boolean
-  messengerTypingState: boolean
+  aryaPhase1Complete: boolean
+  aryaPhase2Triggered: boolean
+  messengerTypingState: { isTyping: boolean; typingUser?: string }
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
   addBotResponse: (userMessage: string) => void
@@ -152,6 +156,10 @@ interface AssessmentAssistantContextType {
   clearMiaCompletionNotifications: () => void
   clearAryaNotifications: () => void
   triggerMiaCompletionPhase2: () => void
+  addMiaMessage: (message: any) => void
+  addAryaMessage: (message: any) => void
+  triggerAryaPhase2: () => void
+  setTypingState: (state: { isTyping: boolean; typingUser?: string }) => void
 }
 
 const AssessmentAssistantContext = createContext<AssessmentAssistantContextType | undefined>(undefined)
@@ -211,6 +219,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [emailRead, setEmailRead] = useState(false)
   const [downloadedDocuments, setDownloadedDocuments] = useState<DocumentFile[]>([])
   const [onboardingMessages, setOnboardingMessages] = useState(onboardingChannel.messages)
+  const [miaMessages, setMiaMessages] = useState<any[]>([])
+  const [aryaMessages, setAryaMessages] = useState<any[]>([])
   const [conversationStage, setConversationStage] = useState<'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_confirmed' | 'mission_briefing' | 'task_readiness_check' | 'task_list_delivered' | 'task_clarity_check' | 'ai_hint_given' | 'mission_started' | 'email_replied' | 'mia_completion'>('initial')
   const [presidentDirectorChannelTriggered, setPresidentDirectorChannelTriggered] = useState(false)
   const [inboxEmails, setInboxEmails] = useState<Email[]>(defaultEmails)
@@ -223,7 +233,9 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [miaCompletionHasNewMessages, setMiaCompletionHasNewMessages] = useState(false)
   const [miaCompletionPhase1Complete, setMiaCompletionPhase1Complete] = useState(false)
   const [miaCompletionPhase2Triggered, setMiaCompletionPhase2Triggered] = useState(false)
-  const [messengerTypingState, setMessengerTypingState] = useState(false)
+  const [aryaPhase1Complete, setAryaPhase1Complete] = useState(false)
+  const [aryaPhase2Triggered, setAryaPhase2Triggered] = useState(false)
+  const [messengerTypingState, setMessengerTypingState] = useState<{ isTyping: boolean; typingUser?: string }>({ isTyping: false })
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message])
@@ -496,6 +508,14 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setOnboardingMessages(prev => [...prev, message])
   }, [])
 
+  const addMiaMessage = useCallback((message: any) => {
+    setMiaMessages(prev => [...prev, message])
+  }, [])
+
+  const addAryaMessage = useCallback((message: any) => {
+    setAryaMessages(prev => [...prev, message])
+  }, [])
+
   const triggerPresidentDirectorChannel = useCallback(() => {
     setPresidentDirectorChannelTriggered(true)
   }, [])
@@ -508,49 +528,105 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setAryaHasNewMessages(false)
   }, [])
 
-  // Separate function for Arya's introduction messages
+  // Arya Phase 1: Only send the first message
   const triggerAryaIntroduction = useCallback(() => {
     setConversationStage('mia_completion')
     // Trigger Arya joining the Onboarding channel
     setAryaJoinedOnboarding(true)
     setAryaHasNewMessages(true)
-    setOnboardingHasNewMessages(true) // Keep this true for Arya's messages
     
-    // Arya's introduction messages - defined in separate scope
-    const aryaIntroductionMessages = [
-      "Halo Bapak Dwiky Cahyo, perkenalkan saya Arya Prajida, President Director di Amboja.",
+    // Reset phase states for new Arya cycle
+    setAryaPhase1Complete(false)
+    setAryaPhase2Triggered(false)
+    
+    // Phase 1: Only send the first introduction message
+    const phase1Message = "Halo Bapak Dwiky Cahyo, perkenalkan saya Arya Prajida, President Director di Amboja."
+    
+    // Send the first message with typing animation
+    setTimeout(() => {
+      // Show typing indicator
+      setMessengerTypingState({ isTyping: true, typingUser: "Arya Prajida" })
+      
+      // After typing delay, send the message
+      setTimeout(() => {
+        const message = {
+          id: `arya-phase1-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+          content: phase1Message,
+          senderName: "Arya Prajida",
+          senderAvatar: "AP",
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          isUser: false,
+        }
+        
+        addAryaMessage(message)
+        setMessengerTypingState({ isTyping: false })
+        
+        // Mark phase 1 as complete - this enables phase 2 to be triggered
+        setAryaPhase1Complete(true)
+      }, 2000) // 2 second typing delay
+    }, 1500) // Initial delay
+  }, [addAryaMessage])
+
+  const triggerAryaPhase2 = useCallback(() => {
+    if (!aryaPhase1Complete || aryaPhase2Triggered) return // Only run if phase 1 is complete and phase 2 hasn't been triggered yet
+    
+    // Mark phase 2 as triggered to prevent duplicate calls
+    setAryaPhase2Triggered(true)
+    
+    // Arya's remaining messages for Phase 2
+    const aryaPhase2Messages = [
       "Senang sekali akhirnya bisa berkenalan dengan Anda dan tim kami hari ini.",
       "Saya baru saja membaca rangkuman yang Anda buat tentang Amboja, dan terus terang saya sangat terkesan dengan perspektif Anda.",
       "Apakah Anda ada waktu sekitar 5-10 menit sekarang untuk kita terhubung lewat **Voice Call** singkat?"
     ]
     
-    // Send Arya's messages with delays and typing animations
-    aryaIntroductionMessages.forEach((currentAryaMessage, messageIndex) => {
+    // Recursive function to send messages with delays
+    const sendAryaMessage = (messageIndex: number) => {
+      if (messageIndex >= aryaPhase2Messages.length) return
+      
+      const currentAryaMessage = aryaPhase2Messages[messageIndex]
+      
+      // Show typing indicator
+      setMessengerTypingState({ isTyping: true, typingUser: "Arya Prajida" })
+      
+      // After typing delay, send the message
       setTimeout(() => {
-        // Show typing indicator
-        setMessengerTypingState(true)
+        const aryaMessage = {
+          id: `arya-phase2-${Date.now()}-${messageIndex}-${Math.random().toString(36).substring(2, 8)}`,
+          content: currentAryaMessage,
+          senderName: "Arya Prajida",
+          senderAvatar: "AP",
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          isUser: false,
+        }
         
-        // After typing delay, send the message
+        addAryaMessage(aryaMessage)
+        setMessengerTypingState({ isTyping: false })
+        
+        // Send next message after delay
         setTimeout(() => {
-          const aryaMessage = {
-            id: `arya-intro-${Date.now()}-${messageIndex}-${Math.random().toString(36).substring(2, 8)}`,
-            content: currentAryaMessage, // Use the properly scoped variable
-            senderName: "Arya Prajida",
-            senderAvatar: "AP",
-            timestamp: new Date().toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit", 
-              hour12: true,
-            }),
-            isUser: false,
-          }
-          
-          addOnboardingMessage(aryaMessage)
-          setMessengerTypingState(false)
-        }, 2000) // 2 second typing delay
-      }, (messageIndex + 1) * 2500) // 2.5 seconds between Arya's messages
-    })
-  }, [addOnboardingMessage])
+          sendAryaMessage(messageIndex + 1)
+        }, 2500) // 2.5 seconds between messages
+      }, 2000) // 2 second typing delay
+    }
+    
+    // Start sending messages after initial delay
+    setTimeout(() => {
+      sendAryaMessage(0)
+    }, 1000)
+  }, [aryaPhase1Complete, aryaPhase2Triggered, addAryaMessage])
+
+  const setTypingState = useCallback((state: { isTyping: boolean; typingUser?: string }) => {
+    setMessengerTypingState(state)
+  }, [])
 
   const triggerMiaCompletionPhase2 = useCallback(() => {
     if (!miaCompletionPhase1Complete || miaCompletionPhase2Triggered) return // Only run if phase 1 is complete and phase 2 hasn't been triggered yet
@@ -562,46 +638,58 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     const miaPhase2Messages = [
       "Proses onboarding dari saya untuk sementara selesai.",
       "Sepertinya rangkuman Anda menarik perhatian salah satu pimpinan kita.",
-      "Setelah ini, President Director kita, Arya Prajida, akan bergabung dalam chat ini untuk berdiskusi singkat dengan Anda."
+      "Setelah ini, President Director kita, Arya Prajida, akan mengirim pesan untuk berdiskusi singkat dengan Anda."
     ]
 
-    // Send phase 2 messages with proper timing and typing animations
-    miaPhase2Messages.forEach((currentMiaMessage, messageIndex) => {
+    // Send phase 2 messages with sequential timing and typing animations
+    const sendMiaMessage = (messageIndex: number) => {
+      if (messageIndex >= miaPhase2Messages.length) return
+      
+      const currentMiaMessage = miaPhase2Messages[messageIndex]
+      
+      // Show typing indicator for current message
+      setMessengerTypingState({ isTyping: true, typingUser: "Mia Avira" })
+      
+      // After typing delay, send the message
       setTimeout(() => {
-        // Show typing indicator
-        setMessengerTypingState(true)
+        const message = {
+          id: `mia-completion-phase2-${Date.now()}-${messageIndex}-${Math.random().toString(36).substring(2, 8)}`,
+          content: currentMiaMessage,
+          senderName: "Mia Avira",
+          senderAvatar: "MA",
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          isUser: false,
+        }
         
-        // After typing delay, send the message
-        setTimeout(() => {
-          const message = {
-            id: `mia-completion-phase2-${Date.now()}-${messageIndex}-${Math.random().toString(36).substring(2, 8)}`,
-            content: currentMiaMessage, // Use the properly scoped variable
-            senderName: "Mia Avira",
-            senderAvatar: "MA",
-            timestamp: new Date().toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            }),
-            isUser: false,
-          }
-          
-          addOnboardingMessage(message)
-          setMessengerTypingState(false)
-          
+        addMiaMessage(message)
+        setMessengerTypingState({ isTyping: false })
+        
+        // Check if this is the last message
+        if (messageIndex === miaPhase2Messages.length - 1) {
           // After the last message, trigger Arya joining after 5 seconds
-          if (messageIndex === miaPhase2Messages.length - 1) {
-            setMiaCompletionInProgress(false)
-            // Clear Mia's completion notifications since her messages are done
-            setMiaCompletionHasNewMessages(false)
-            setTimeout(() => {
-              triggerAryaIntroduction() // Call the separate function
-            }, 5000) // 5 seconds after Mia's last message
-          }
-        }, 2000) // 2 second typing delay for each Mia message  
-      }, (messageIndex + 1) * 3000) // 3 seconds between each message
-    })
-  }, [miaCompletionPhase1Complete, miaCompletionPhase2Triggered, addOnboardingMessage, triggerAryaIntroduction])
+          setMiaCompletionInProgress(false)
+          setMiaCompletionHasNewMessages(false)
+          setTimeout(() => {
+            triggerAryaIntroduction()
+          }, 5000)
+        } else {
+          // Send next message after delay
+          setTimeout(() => {
+            sendMiaMessage(messageIndex + 1)
+          }, 1000) // 1 second pause between messages
+        }
+      }, 2000) // 2 second typing delay
+    }
+    
+    // Start sending messages after initial delay
+    setTimeout(() => {
+      sendMiaMessage(0)
+    }, 1000)
+  }, [miaCompletionPhase1Complete, miaCompletionPhase2Triggered, addMiaMessage, triggerAryaIntroduction])
 
   const triggerEmailReplyWithAttachment = useCallback(() => {
     setConversationStage('email_replied')
@@ -619,7 +707,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     // Send the first message with typing animation
     setTimeout(() => {
       // Show typing indicator
-      setMessengerTypingState(true)
+      setMessengerTypingState({ isTyping: true, typingUser: "Mia Avira" })
       
       // After typing delay, send the message
       setTimeout(() => {
@@ -636,15 +724,15 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
           isUser: false,
         }
         
-        addOnboardingMessage(message)
-        setMessengerTypingState(false)
+        addMiaMessage(message)
+        setMessengerTypingState({ isTyping: false })
         
         // Mark phase 1 as complete - this enables phase 2 to be triggered
         setMiaCompletionPhase1Complete(true)
         setMiaCompletionInProgress(false)
       }, 2000) // 2 second typing delay
     }, 1500) // Initial delay
-  }, [addOnboardingMessage])
+  }, [addMiaMessage])
 
   const startMissionBriefing = useCallback((handleSendMessage: (channelId: string, message: any) => void) => {
     console.log('Debug - startMissionBriefing called!')
@@ -833,7 +921,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setAryaJoinedOnboarding(false)
     setAryaHasNewMessages(false)
     setOnboardingHasNewMessages(false)
-    setMessengerTypingState(false)
+    setMessengerTypingState({ isTyping: false })
   }, [])
 
   const value: AssessmentAssistantContextType = {
@@ -851,6 +939,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     emailRead,
     downloadedDocuments,
     onboardingMessages,
+    miaMessages,
+    aryaMessages,
     conversationStage,
     presidentDirectorChannelTriggered,
     inboxEmails,
@@ -863,6 +953,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     miaCompletionHasNewMessages,
     miaCompletionPhase1Complete,
     miaCompletionPhase2Triggered,
+    aryaPhase1Complete,
+    aryaPhase2Triggered,
     messengerTypingState,
     addMessage,
     addUserMessage,
@@ -890,6 +982,10 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     clearMiaCompletionNotifications,
     clearAryaNotifications,
     triggerMiaCompletionPhase2,
+    addMiaMessage,
+    addAryaMessage,
+    triggerAryaPhase2,
+    setTypingState,
   }
 
   return (

@@ -24,10 +24,12 @@ interface ActiveMessengerChannelProps {
   onSendMessage: (channelId: string, message: any) => void
   onOnboardingTrigger: () => void
   isTyping: boolean
+  typingUser?: string
   conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_confirmed' | 'mission_briefing' | 'task_readiness_check' | 'task_list_delivered' | 'task_clarity_check' | 'ai_hint_given' | 'mission_started' | 'email_replied' | 'mia_completion'
   clearMiaCompletionNotifications: () => void
   clearAryaNotifications: () => void
   triggerMiaCompletionPhase2: () => void
+  getMessagesForParticipant: (participant: Participant | null) => any[]
 }
 
 export function ActiveMessengerChannel({ 
@@ -36,10 +38,12 @@ export function ActiveMessengerChannel({
   onSendMessage, 
   onOnboardingTrigger, 
   isTyping, 
+  typingUser,
   conversationStage,
   clearMiaCompletionNotifications,
   clearAryaNotifications,
-  triggerMiaCompletionPhase2
+  triggerMiaCompletionPhase2,
+  getMessagesForParticipant
 }: ActiveMessengerChannelProps) {
   const [isParticipantsPanelOpen, setIsParticipantsPanelOpen] = useState(false)
   const [messageInput, setMessageInput] = useState("")
@@ -59,7 +63,7 @@ export function ActiveMessengerChannel({
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom()
-  }, [channel.messages, selectedParticipant])
+  }, [selectedParticipant, getMessagesForParticipant])
 
   // Enhanced scroll behavior - scroll when typing animation starts
   useEffect(() => {
@@ -88,15 +92,16 @@ export function ActiveMessengerChannel({
       selectedParticipant?.name === "Mia Avira"
     ) {
       // Check if we already have the welcome and question messages to prevent duplicates
-      const hasWelcomeMessage = channel.messages.some(msg => msg.content.includes("Selamat datang di Amboja"))
-      const hasQuestionMessage = channel.messages.some(msg => msg.content.includes("Bagaimana sejauh ini"))
+      const currentMessages = getMessagesForParticipant(selectedParticipant)
+      const hasWelcomeMessage = currentMessages.some(msg => msg.content.includes("Selamat datang di Amboja"))
+      const hasQuestionMessage = currentMessages.some(msg => msg.content.includes("Bagaimana sejauh ini"))
       
       // Only trigger if we don't have these messages yet
       if (!hasWelcomeMessage && !hasQuestionMessage) {
         onOnboardingTrigger()
       }
     }
-  }, [channel.id, selectedParticipant?.name, channel.messages, onOnboardingTrigger])
+  }, [channel.id, selectedParticipant?.name, selectedParticipant, onOnboardingTrigger, getMessagesForParticipant])
 
   // Auto-fill functionality for Interactive Tutorial
   useEffect(() => {
@@ -105,7 +110,7 @@ export function ActiveMessengerChannel({
     }
 
     // Get the latest message from Mia
-    const latestMiaMessage = channel.messages
+    const latestMiaMessage = getMessagesForParticipant(selectedParticipant)
       .filter(msg => !msg.isUser && msg.senderName === "Mia Avira")
       .slice(-1)[0]
 
@@ -152,7 +157,7 @@ export function ActiveMessengerChannel({
       setIsAutoFilled(true)
       setLastProcessedMessageId(latestMiaMessage.id)
     }
-  }, [channel.messages, channel.id, selectedParticipant?.name, lastProcessedMessageId])
+  }, [selectedParticipant, channel.id, selectedParticipant?.name, lastProcessedMessageId, getMessagesForParticipant])
 
 
 
@@ -235,25 +240,28 @@ export function ActiveMessengerChannel({
   
   const inputPlaceholder = getInputPlaceholder()
 
-  // Filter messages based on selected participant
+  // Get typing user info for display
+  const getTypingUserInfo = () => {
+    if (!typingUser) return { avatar: "MA", name: "Mia Avira", bgColor: "bg-purple-600" }
+    
+    switch (typingUser) {
+      case "Arya Prajida":
+        return { avatar: "AP", name: "Arya Prajida", bgColor: "bg-blue-600" }
+      case "Mia Avira":
+      default:
+        return { avatar: "MA", name: "Mia Avira", bgColor: "bg-purple-600" }
+    }
+  }
+
+  const typingUserInfo = getTypingUserInfo()
+
+  // Get messages based on selected participant using the new separation logic
   const getFilteredMessages = () => {
-    if (!selectedParticipant) {
-      return channel.messages
-    }
-
-    // For the onboarding channel, show messages based on selected participant
     if (channel.id === "onboarding-channel") {
-      return channel.messages.filter(message => {
-        // Always show user messages and system messages
-        if (message.isUser || message.senderName === "System") {
-          return true
-        }
-        
-        // Show messages from the selected participant
-        return message.senderName === selectedParticipant.name
-      })
+      // Use the message separation logic from parent
+      return getMessagesForParticipant(selectedParticipant)
     }
-
+    
     // For other channels, show all messages (current behavior)
     return channel.messages
   }
@@ -315,7 +323,7 @@ export function ActiveMessengerChannel({
           className="flex-1 p-4 bg-gray-50 overflow-y-auto"
           style={{ scrollBehavior: 'smooth' }}
         >
-          {channel.messages.length === 0 ? (
+          {filteredMessages.length === 0 ? (
             /* Empty Chat State */
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
@@ -394,11 +402,11 @@ export function ActiveMessengerChannel({
                 <div className="mb-4">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
-                      Y
+                      AP
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-gray-900">~You</span>
+                        <span className="text-sm font-medium text-gray-900">~Arya Prajida</span>
                       </div>
                       <div className="p-3 rounded-lg shadow-sm max-w-md bg-green-500 text-white">
                         <button
@@ -425,12 +433,12 @@ export function ActiveMessengerChannel({
               {isTyping && (
                 <div className="mb-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
-                      MA
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${typingUserInfo.bgColor} text-sm`}>
+                      {typingUserInfo.avatar}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-gray-900">~Mia Avira</span>
+                        <span className="text-sm font-medium text-gray-900">~{typingUserInfo.name}</span>
                       </div>
                       <div className="p-3 rounded-lg shadow-sm max-w-md bg-white text-gray-700">
                         <div className="flex items-center gap-1">

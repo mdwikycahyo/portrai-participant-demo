@@ -8,6 +8,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Layout } from "@/components/layout"
 
+// Define types for conversation messages
+type ConversationMessage = {
+  speaker: string
+  text: string
+  waitForResponse?: boolean
+}
+
 // Mock contact data with Ezra Kaell as contactId "1"
 const contactData = {
   superior: [
@@ -102,7 +109,7 @@ export default function ActiveCallPage() {
   const contactId = params.contactId as string
 
   const [isMuted, setIsMuted] = useState(false)
-  const [transcript, setTranscript] = useState<Array<{ speaker: string; text: string }>>([])
+  const [transcript, setTranscript] = useState<ConversationMessage[]>([])
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const [currentCharIndex, setCurrentCharIndex] = useState(0)
   
@@ -124,7 +131,7 @@ export default function ActiveCallPage() {
   }, [contact])
 
   // Arya Prajida conversation flow
-  const getAryaConversationData = () => [
+  const getAryaConversationData = (): ConversationMessage[] => [
     {
       speaker: "Arya Prajida",
       text: "Halo, Bapak Dwiky Cahyo. Saya Arya Prajida. Apa kabar?",
@@ -173,7 +180,7 @@ export default function ActiveCallPage() {
   ]
 
   // Generate conversation data with actual contact name
-  const getConversationData = (contactName: string) => [
+  const getConversationData = (contactName: string): ConversationMessage[] => [
     {
       speaker: contactName,
       text: "Terima kasih sudah menghubungi saya via call. Seperti yang saya bilang di chat tadi, saya sedang sangat sibuk hari ini dan lebih efektif kalau kita diskusi langsung seperti ini.",
@@ -212,7 +219,7 @@ export default function ActiveCallPage() {
     },
   ]
 
-  const conversationData = contact ? (isAryaCall ? getAryaConversationData() : getConversationData(contact.name)) : []
+  const conversationData: ConversationMessage[] = contact ? (isAryaCall ? getAryaConversationData() : getConversationData(contact.name)) : []
 
   // Simulate real-time transcript
   useEffect(() => {
