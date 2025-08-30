@@ -122,6 +122,9 @@ interface AssessmentAssistantContextType {
   aryaJoinedOnboarding: boolean
   aryaHasNewMessages: boolean
   onboardingHasNewMessages: boolean
+  miaCompletionHasNewMessages: boolean
+  miaCompletionPhase1Complete: boolean
+  miaCompletionPhase2Triggered: boolean
   messengerTypingState: boolean
   addMessage: (message: Message) => void
   addUserMessage: (text: string) => void
@@ -146,6 +149,9 @@ interface AssessmentAssistantContextType {
   triggerPresidentDirectorChannel: () => void
   startMissionBriefing: (handleSendMessage: (channelId: string, message: any) => void) => void
   handleMissionBriefingResponse: (userMessage: string, handleSendMessage: (channelId: string, message: any) => void) => void
+  clearMiaCompletionNotifications: () => void
+  clearAryaNotifications: () => void
+  triggerMiaCompletionPhase2: () => void
 }
 
 const AssessmentAssistantContext = createContext<AssessmentAssistantContextType | undefined>(undefined)
@@ -214,6 +220,9 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
   const [aryaJoinedOnboarding, setAryaJoinedOnboarding] = useState(false)
   const [aryaHasNewMessages, setAryaHasNewMessages] = useState(false)
   const [onboardingHasNewMessages, setOnboardingHasNewMessages] = useState(false)
+  const [miaCompletionHasNewMessages, setMiaCompletionHasNewMessages] = useState(false)
+  const [miaCompletionPhase1Complete, setMiaCompletionPhase1Complete] = useState(false)
+  const [miaCompletionPhase2Triggered, setMiaCompletionPhase2Triggered] = useState(false)
   const [messengerTypingState, setMessengerTypingState] = useState(false)
 
   const addMessage = useCallback((message: Message) => {
@@ -491,21 +500,73 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     setPresidentDirectorChannelTriggered(true)
   }, [])
 
-  const triggerEmailReplyWithAttachment = useCallback(() => {
-    setConversationStage('email_replied')
-    setMiaCompletionInProgress(true)
-    setOnboardingHasNewMessages(true)
+  const clearMiaCompletionNotifications = useCallback(() => {
+    setMiaCompletionHasNewMessages(false)
+  }, [])
+
+  const clearAryaNotifications = useCallback(() => {
+    setAryaHasNewMessages(false)
+  }, [])
+
+  // Separate function for Arya's introduction messages
+  const triggerAryaIntroduction = useCallback(() => {
+    setConversationStage('mia_completion')
+    // Trigger Arya joining the Onboarding channel
+    setAryaJoinedOnboarding(true)
+    setAryaHasNewMessages(true)
+    setOnboardingHasNewMessages(true) // Keep this true for Arya's messages
     
-    // Mia's completion messages
-    const completionMessages = [
-      "Halo Bapak Dwiky Cahyo, email dan dokumen rangkuman Anda sudah saya terima. Terima kasih banyak, misi pertama Anda selesai dengan sangat baik!",
+    // Arya's introduction messages - defined in separate scope
+    const aryaIntroductionMessages = [
+      "Halo Bapak Dwiky Cahyo, perkenalkan saya Arya Prajida, President Director di Amboja.",
+      "Senang sekali akhirnya bisa berkenalan dengan Anda dan tim kami hari ini.",
+      "Saya baru saja membaca rangkuman yang Anda buat tentang Amboja, dan terus terang saya sangat terkesan dengan perspektif Anda.",
+      "Apakah Anda ada waktu sekitar 5-10 menit sekarang untuk kita terhubung lewat **Voice Call** singkat?"
+    ]
+    
+    // Send Arya's messages with delays and typing animations
+    aryaIntroductionMessages.forEach((currentAryaMessage, messageIndex) => {
+      setTimeout(() => {
+        // Show typing indicator
+        setMessengerTypingState(true)
+        
+        // After typing delay, send the message
+        setTimeout(() => {
+          const aryaMessage = {
+            id: `arya-intro-${Date.now()}-${messageIndex}-${Math.random().toString(36).substring(2, 8)}`,
+            content: currentAryaMessage, // Use the properly scoped variable
+            senderName: "Arya Prajida",
+            senderAvatar: "AP",
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit", 
+              hour12: true,
+            }),
+            isUser: false,
+          }
+          
+          addOnboardingMessage(aryaMessage)
+          setMessengerTypingState(false)
+        }, 2000) // 2 second typing delay
+      }, (messageIndex + 1) * 2500) // 2.5 seconds between Arya's messages
+    })
+  }, [addOnboardingMessage])
+
+  const triggerMiaCompletionPhase2 = useCallback(() => {
+    if (!miaCompletionPhase1Complete || miaCompletionPhase2Triggered) return // Only run if phase 1 is complete and phase 2 hasn't been triggered yet
+    
+    // Mark phase 2 as triggered to prevent duplicate calls
+    setMiaCompletionPhase2Triggered(true)
+    
+    // Phase 2 messages - the continuation messages
+    const miaPhase2Messages = [
       "Proses onboarding dari saya untuk sementara selesai.",
       "Sepertinya rangkuman Anda menarik perhatian salah satu pimpinan kita.",
       "Setelah ini, President Director kita, Arya Prajida, akan bergabung dalam chat ini untuk berdiskusi singkat dengan Anda."
     ]
 
-    // Send messages with proper timing and typing animations
-    completionMessages.forEach((messageText, index) => {
+    // Send phase 2 messages with proper timing and typing animations
+    miaPhase2Messages.forEach((currentMiaMessage, messageIndex) => {
       setTimeout(() => {
         // Show typing indicator
         setMessengerTypingState(true)
@@ -513,8 +574,8 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
         // After typing delay, send the message
         setTimeout(() => {
           const message = {
-            id: `mia-completion-${Date.now()}-${index}`,
-            content: messageText,
+            id: `mia-completion-phase2-${Date.now()}-${messageIndex}-${Math.random().toString(36).substring(2, 8)}`,
+            content: currentMiaMessage, // Use the properly scoped variable
             senderName: "Mia Avira",
             senderAvatar: "MA",
             timestamp: new Date().toLocaleTimeString("en-US", {
@@ -529,54 +590,60 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
           setMessengerTypingState(false)
           
           // After the last message, trigger Arya joining after 5 seconds
-          if (index === completionMessages.length - 1) {
+          if (messageIndex === miaPhase2Messages.length - 1) {
             setMiaCompletionInProgress(false)
+            // Clear Mia's completion notifications since her messages are done
+            setMiaCompletionHasNewMessages(false)
             setTimeout(() => {
-              setConversationStage('mia_completion')
-              // Trigger Arya joining the Onboarding channel
-              setAryaJoinedOnboarding(true)
-              setAryaHasNewMessages(true)
-              setOnboardingHasNewMessages(true) // Keep this true for Arya's messages
-              
-              // Send Arya's introduction messages
-              const aryaMessages = [
-                "Halo Bapak Dwiky Cahyo, perkenalkan saya Arya Prajida, President Director di Amboja.",
-                "Senang sekali akhirnya bisa berkenalan dengan Anda dan tim kami hari ini.",
-                "Saya baru saja membaca rangkuman yang Anda buat tentang Amboja, dan terus terang saya sangat terkesan dengan perspektif Anda.",
-                "Apakah Anda ada waktu sekitar 5-10 menit sekarang untuk kita terhubung lewat **Voice Call** singkat?"
-              ]
-              
-              // Send Arya's messages with delays and typing animations
-              aryaMessages.forEach((aryaMessageText, aryaIndex) => {
-                setTimeout(() => {
-                  // Show typing indicator
-                  setMessengerTypingState(true)
-                  
-                  // After typing delay, send the message
-                  setTimeout(() => {
-                    const aryaMessage = {
-                      id: `arya-intro-${Date.now()}-${aryaIndex}`,
-                      content: aryaMessageText,
-                      senderName: "Arya Prajida",
-                      senderAvatar: "AP",
-                      timestamp: new Date().toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit", 
-                        hour12: true,
-                      }),
-                      isUser: false,
-                    }
-                    
-                    addOnboardingMessage(aryaMessage)
-                    setMessengerTypingState(false)
-                  }, 2000) // 2 second typing delay
-                }, (aryaIndex + 1) * 2500) // 2.5 seconds between Arya's messages
-              })
+              triggerAryaIntroduction() // Call the separate function
             }, 5000) // 5 seconds after Mia's last message
           }
         }, 2000) // 2 second typing delay for each Mia message  
-      }, (index + 1) * 3000) // 3 seconds between each message
+      }, (messageIndex + 1) * 3000) // 3 seconds between each message
     })
+  }, [miaCompletionPhase1Complete, miaCompletionPhase2Triggered, addOnboardingMessage, triggerAryaIntroduction])
+
+  const triggerEmailReplyWithAttachment = useCallback(() => {
+    setConversationStage('email_replied')
+    setMiaCompletionInProgress(true)
+    setMiaCompletionHasNewMessages(true)
+    setOnboardingHasNewMessages(true)
+    
+    // Reset phase states for new completion cycle
+    setMiaCompletionPhase1Complete(false)
+    setMiaCompletionPhase2Triggered(false)
+    
+    // Phase 1: Only send the first completion message
+    const phase1Message = "Halo Bapak Dwiky Cahyo, email dan dokumen rangkuman Anda sudah saya terima. Terima kasih banyak, misi pertama Anda selesai dengan sangat baik!"
+    
+    // Send the first message with typing animation
+    setTimeout(() => {
+      // Show typing indicator
+      setMessengerTypingState(true)
+      
+      // After typing delay, send the message
+      setTimeout(() => {
+        const message = {
+          id: `mia-completion-phase1-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+          content: phase1Message,
+          senderName: "Mia Avira",
+          senderAvatar: "MA",
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          isUser: false,
+        }
+        
+        addOnboardingMessage(message)
+        setMessengerTypingState(false)
+        
+        // Mark phase 1 as complete - this enables phase 2 to be triggered
+        setMiaCompletionPhase1Complete(true)
+        setMiaCompletionInProgress(false)
+      }, 2000) // 2 second typing delay
+    }, 1500) // Initial delay
   }, [addOnboardingMessage])
 
   const startMissionBriefing = useCallback((handleSendMessage: (channelId: string, message: any) => void) => {
@@ -793,6 +860,9 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     aryaJoinedOnboarding,
     aryaHasNewMessages,
     onboardingHasNewMessages,
+    miaCompletionHasNewMessages,
+    miaCompletionPhase1Complete,
+    miaCompletionPhase2Triggered,
     messengerTypingState,
     addMessage,
     addUserMessage,
@@ -817,6 +887,9 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     triggerPresidentDirectorChannel,
     startMissionBriefing,
     handleMissionBriefingResponse,
+    clearMiaCompletionNotifications,
+    clearAryaNotifications,
+    triggerMiaCompletionPhase2,
   }
 
   return (

@@ -17,7 +17,12 @@ interface ParticipantSelectionProps {
 }
 
 export function ParticipantSelection({ channel, selectedParticipant, onSelectParticipant }: ParticipantSelectionProps) {
-  const { onboardingChannelTriggered, hasInteractedWithMia } = useAssessmentAssistant()
+  const { 
+    onboardingChannelTriggered, 
+    hasInteractedWithMia,
+    miaCompletionHasNewMessages,
+    aryaHasNewMessages
+  } = useAssessmentAssistant()
   
   // Static timestamps for participants as shown in the design
   const participantTimestamps = ["11:30 AM", "09:00 AM", "08:45 AM", "02:30 PM", "10:15 AM"]
@@ -25,12 +30,21 @@ export function ParticipantSelection({ channel, selectedParticipant, onSelectPar
   // Filter out "You" from the participant list
   const filteredParticipants = channel.participants.filter((participant) => participant.name !== "You")
   
-  // Check if this is Mia Avira in the onboarding channel and user hasn't interacted yet
-  const isMiaInOnboarding = (participant: Participant) => 
-    channel.id === "onboarding-channel" && 
-    participant.name === "Mia Avira" && 
-    onboardingChannelTriggered &&
-    !hasInteractedWithMia
+  // Check if participant has new messages requiring red dot notification
+  const hasNotification = (participant: Participant) => {
+    if (channel.id === "onboarding-channel") {
+      if (participant.name === "Mia Avira") {
+        // Show red dot for Mia when:
+        // 1. Original onboarding flow (hasn't interacted yet)
+        // 2. Has new completion messages
+        return (onboardingChannelTriggered && !hasInteractedWithMia) || miaCompletionHasNewMessages
+      } else if (participant.name === "Arya Prajida") {
+        // Show red dot for Arya when he has new messages
+        return aryaHasNewMessages
+      }
+    }
+    return false
+  }
 
   return (
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
@@ -54,7 +68,7 @@ export function ParticipantSelection({ channel, selectedParticipant, onSelectPar
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-gray-900">{participant.name}</h3>
-                    {isMiaInOnboarding(participant) && (
+                    {hasNotification(participant) && (
                       <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                     )}
                   </div>

@@ -23,6 +23,7 @@ export function MessengerChannelList({
     hasInteractedWithMia,
     onboardingHasNewMessages,
     miaCompletionInProgress,
+    miaCompletionHasNewMessages,
     aryaHasNewMessages
   } = useAssessmentAssistant()
   
@@ -56,13 +57,14 @@ export function MessengerChannelList({
                   {channel.id === "onboarding-channel" && (
                     // Show red dot when:
                     // 1. Original logic: channel triggered and user hasn't interacted with Mia
-                    // 2. Mia completion messages are in progress
-                    // 3. Onboarding channel has new messages (from Mia or Arya)
-                    // 4. Arya has new messages
+                    // 2. Mia completion messages are in progress OR Mia has new completion messages
+                    // 3. Arya has new messages
+                    // 4. Generic onboarding messages (fallback for other cases)
                     (onboardingChannelTriggered && !hasInteractedWithMia) ||
                     miaCompletionInProgress ||
-                    onboardingHasNewMessages ||
-                    aryaHasNewMessages
+                    miaCompletionHasNewMessages ||
+                    aryaHasNewMessages ||
+                    onboardingHasNewMessages
                   ) && (
                     <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
                   )}

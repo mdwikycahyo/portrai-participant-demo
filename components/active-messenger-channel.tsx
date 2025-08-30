@@ -25,6 +25,9 @@ interface ActiveMessengerChannelProps {
   onOnboardingTrigger: () => void
   isTyping: boolean
   conversationStage: 'initial' | 'waiting_for_response' | 'responded' | 'mission_phase' | 'email_confirmed' | 'mission_briefing' | 'task_readiness_check' | 'task_list_delivered' | 'task_clarity_check' | 'ai_hint_given' | 'mission_started' | 'email_replied' | 'mia_completion'
+  clearMiaCompletionNotifications: () => void
+  clearAryaNotifications: () => void
+  triggerMiaCompletionPhase2: () => void
 }
 
 export function ActiveMessengerChannel({ 
@@ -33,7 +36,10 @@ export function ActiveMessengerChannel({
   onSendMessage, 
   onOnboardingTrigger, 
   isTyping, 
-  conversationStage 
+  conversationStage,
+  clearMiaCompletionNotifications,
+  clearAryaNotifications,
+  triggerMiaCompletionPhase2
 }: ActiveMessengerChannelProps) {
   const [isParticipantsPanelOpen, setIsParticipantsPanelOpen] = useState(false)
   const [messageInput, setMessageInput] = useState("")
@@ -53,7 +59,7 @@ export function ActiveMessengerChannel({
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom()
-  }, [channel.messages])
+  }, [channel.messages, selectedParticipant])
 
   // Enhanced scroll behavior - scroll when typing animation starts
   useEffect(() => {
@@ -62,6 +68,18 @@ export function ActiveMessengerChannel({
       scrollToBottom()
     }
   }, [isTyping])
+
+  // Clear notifications when user is viewing messages from specific participants
+  useEffect(() => {
+    if (channel.id === "onboarding-channel" && selectedParticipant) {
+      if (selectedParticipant.name === "Mia Avira") {
+        clearMiaCompletionNotifications()
+        // Note: triggerMiaCompletionPhase2() is called in handleSelectParticipant to avoid duplicates
+      } else if (selectedParticipant.name === "Arya Prajida") {
+        clearAryaNotifications()
+      }
+    }
+  }, [channel.id, selectedParticipant, clearMiaCompletionNotifications, clearAryaNotifications])
 
   // Trigger onboarding when Mia is selected in onboarding channel
   useEffect(() => {
@@ -217,6 +235,31 @@ export function ActiveMessengerChannel({
   
   const inputPlaceholder = getInputPlaceholder()
 
+  // Filter messages based on selected participant
+  const getFilteredMessages = () => {
+    if (!selectedParticipant) {
+      return channel.messages
+    }
+
+    // For the onboarding channel, show messages based on selected participant
+    if (channel.id === "onboarding-channel") {
+      return channel.messages.filter(message => {
+        // Always show user messages and system messages
+        if (message.isUser || message.senderName === "System") {
+          return true
+        }
+        
+        // Show messages from the selected participant
+        return message.senderName === selectedParticipant.name
+      })
+    }
+
+    // For other channels, show all messages (current behavior)
+    return channel.messages
+  }
+
+  const filteredMessages = getFilteredMessages()
+
   // Check if message should have call button
   const shouldShowCallButton = (message: any) => {
     return (
@@ -232,7 +275,7 @@ export function ActiveMessengerChannel({
     return (
       message.senderName === "Arya Prajida" &&
       message.content.includes("Apakah Anda ada waktu sekitar 5-10 menit sekarang untuk kita terhubung lewat **Voice Call** singkat?") &&
-      channel.id === "president-director-channel"
+      (channel.id === "president-director-channel" || channel.id === "onboarding-channel")
     )
   }
 
@@ -296,7 +339,7 @@ export function ActiveMessengerChannel({
                 <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full">Senin, 11 Jan</span>
               </div>
 
-              {channel.messages.map((message) => (
+              {filteredMessages.map((message) => (
                 <div key={message.id} className="mb-4">
                   {isSystemMessage(message) ? (
                     /* System Message - Centered */
@@ -335,17 +378,7 @@ export function ActiveMessengerChannel({
                               </button>
                             </div>
                           )}
-                          {shouldShowVoiceCallBubble(message) && (
-                            <div className="-mx-3 -mb-3 mt-3 border-t border-gray-200">
-                              <button
-                                onClick={handleVoiceCallClick}
-                                className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-green-50 hover:bg-green-100 rounded-b-lg transition-colors duration-200"
-                              >
-                                <Phone className="w-4 h-4 text-green-600" />
-                                <span className="text-green-600 font-medium">Panggil John Doe</span>
-                              </button>
-                            </div>
-                          )}
+
                         </div>
                         <span className={`text-xs text-gray-500 mt-1 block ${message.isUser ? "text-right" : ""}`}>
                           {message.timestamp}
@@ -355,6 +388,38 @@ export function ActiveMessengerChannel({
                   )}
                 </div>
               ))}
+
+              {/* Voice Call Button Bubble - Appears after Arya's voice call message */}
+              {filteredMessages.some(message => shouldShowVoiceCallBubble(message)) && (
+                <div className="mb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
+                      Y
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium text-gray-900">~You</span>
+                      </div>
+                      <div className="p-3 rounded-lg shadow-sm max-w-md bg-green-500 text-white">
+                        <button
+                          onClick={handleVoiceCallClick}
+                          className="flex items-center justify-center gap-2 w-full py-2 px-3 hover:bg-green-600 rounded transition-colors duration-200"
+                        >
+                          <Phone className="w-4 h-4 text-white" />
+                          <span className="font-medium">Panggil Arya Prajida</span>
+                        </button>
+                      </div>
+                      <span className="text-xs text-gray-500 mt-1 block">
+                        {new Date().toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Typing Indicator */}
               {isTyping && (

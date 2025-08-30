@@ -42,7 +42,10 @@ function MessengerPageContent() {
     aryaJoinedOnboarding,
     aryaHasNewMessages,
     onboardingHasNewMessages,
-    messengerTypingState
+    messengerTypingState,
+    clearMiaCompletionNotifications,
+    clearAryaNotifications,
+    triggerMiaCompletionPhase2
   } = useAssessmentAssistant()
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
@@ -314,6 +317,24 @@ function MessengerPageContent() {
     }
   }, [aryaJoinedOnboarding, onboardingMessages])
 
+  // Sync onboarding messages from context to channel messages
+  useEffect(() => {
+    setChannels((prevChannels) => {
+      return prevChannels.map(channel => {
+        if (channel.id === "onboarding-channel") {
+          return {
+            ...channel,
+            messages: onboardingMessages, // Always sync the latest messages from context
+            lastActivity: onboardingMessages.length > 0 
+              ? onboardingMessages[onboardingMessages.length - 1].timestamp
+              : channel.lastActivity,
+          }
+        }
+        return channel
+      })
+    })
+  }, [onboardingMessages])
+
   // Sync typing state from context (for onboarding channel messages)
   useEffect(() => {
     if (selectedChannelId === "onboarding-channel") {
@@ -328,6 +349,17 @@ function MessengerPageContent() {
 
   const handleSelectParticipant = (participant: Participant) => {
     setSelectedParticipant(participant)
+    
+    // Clear notifications and trigger continuation when user opens specific participant's chat
+    if (selectedChannelId === "onboarding-channel") {
+      if (participant.name === "Mia Avira") {
+        clearMiaCompletionNotifications()
+        // Trigger Phase 2 messages when user opens Mia's chat
+        triggerMiaCompletionPhase2()
+      } else if (participant.name === "Arya Prajida") {
+        clearAryaNotifications()
+      }
+    }
   }
 
   const handleAddNewChannel = () => {
@@ -783,6 +815,9 @@ function MessengerPageContent() {
                   onOnboardingTrigger={handleOnboardingTrigger}
                   isTyping={isTyping}
                   conversationStage={conversationStage}
+                  clearMiaCompletionNotifications={clearMiaCompletionNotifications}
+                  clearAryaNotifications={clearAryaNotifications}
+                  triggerMiaCompletionPhase2={triggerMiaCompletionPhase2}
                 />
               )}
             </div>
