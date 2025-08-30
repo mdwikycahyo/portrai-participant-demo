@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import { documentsData, type DocumentFile } from "@/lib/documents-data"
+import { useDocuments } from "@/contexts/documents-context"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -29,6 +30,9 @@ export function ComposeDocumentSelection({
   isAnimating,
 }: ComposeDocumentSelectionProps) {
   const [expandedFolders, setExpandedFolders] = useState<string[]>([])
+  const { savedDocuments } = useDocuments()
+
+
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) => (prev.includes(folderId) ? prev.filter((f) => f !== folderId) : [...prev, folderId]))
@@ -122,7 +126,7 @@ export function ComposeDocumentSelection({
 
   return (
     <div
-      className={`w-[320px] bg-white border-l border-gray-200 h-full transition-all duration-300 ease-in-out transform ${
+      className={`fixed right-0 top-0 w-[320px] bg-white border-l border-gray-200 h-full transition-all duration-300 ease-in-out transform z-50 ${
         isAnimating ? "translate-x-0" : "translate-x-full"
       }`}
     >
@@ -193,6 +197,16 @@ export function ComposeDocumentSelection({
           {documentsData.rootFiles.length > 0 && (
             <div className="space-y-3 mb-4">
               {documentsData.rootFiles.map((file) => (
+                <FileItem key={file.id} file={file} />
+              ))}
+            </div>
+          )}
+
+          {/* Saved Documents Section */}
+          {savedDocuments.length > 0 && (
+            <div className="space-y-3 mb-4">
+              <div className="text-sm font-medium text-gray-700 mb-2">Dokumen Tersimpan</div>
+              {savedDocuments.map((file) => (
                 <FileItem key={file.id} file={file} />
               ))}
             </div>

@@ -1,18 +1,13 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { ComponentState, ComponentStatus, ComponentDisplay } from "../types";
 
 interface CompatibilityTabProps {
   componentStates: ComponentState;
-  isChecking: boolean;
-  onCheckDevice: () => void;
 }
 
 export function CompatibilityTab({
   componentStates,
-  isChecking,
-  onCheckDevice,
 }: CompatibilityTabProps) {
   const getComponentDisplay = (
     status: ComponentStatus,
@@ -58,20 +53,6 @@ export function CompatibilityTab({
         <h1 className="text-xl font-bold text-gray-800">
           Compatibility Check
         </h1>
-        <Button
-          onClick={onCheckDevice}
-          disabled={isChecking}
-          className="flex items-center bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-900 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span
-            className={`material-icons mr-2 text-base ${
-              isChecking ? "animate-spin" : ""
-            }`}
-          >
-            {isChecking ? "sync" : "refresh"}
-          </span>
-          {isChecking ? "Checking..." : "Re-check Device"}
-        </Button>
       </div>
       <p className="text-sm text-gray-600 mb-4">
         Compatibility checking is a pre-requisite procedure that allows

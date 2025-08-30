@@ -3,10 +3,11 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { Bot, X, Send, Bell, RotateCcw } from "lucide-react"
+import { Bot, X, Send, Bell, RotateCcw, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { useToast } from "@/hooks/use-toast"
 
 interface AssessmentAssistantProps {
   isOpen: boolean
@@ -33,11 +34,17 @@ export function AssessmentAssistant({
     tutorialStep,
     isTyping,
     conversationPhase,
+    tutorialPendingStart,
     handleTutorialResponse,
     resetTutorialProgress,
+    startDeferredTutorialMessages,
+    documentEditorPage,
+    documentEditorTitle,
   } = useAssessmentAssistant()
   
   const [inputValue, setInputValue] = useState("")
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
+  const { toast } = useToast()
   
   // Create a ref for the messages container
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -94,6 +101,30 @@ export function AssessmentAssistant({
     }
   }, [isOpen, onChatOpened])
 
+  // Trigger deferred tutorial messages when panel is opened for the first time
+  useEffect(() => {
+    if (isOpen && tutorialPendingStart) {
+      startDeferredTutorialMessages()
+    }
+  }, [isOpen, tutorialPendingStart, startDeferredTutorialMessages])
+
+  // Auto-fill input based on conversation phase and document editor conditions
+  useEffect(() => {
+    if (conversationPhase === 'readiness_check' && !isTutorialActive && !isTyping) {
+      setInputValue("Ya, saya sudah siap untuk memulai")
+    } else if (conversationPhase === 'clarity_check' && !isTutorialActive && !isTyping) {
+      setInputValue("Ya, jelas")
+    } else if (
+      documentEditorPage === '/documents/editor' && 
+      documentEditorTitle === 'Apa yang Saya Ketahui Tentang Amboja' && 
+      !isTutorialActive && 
+      !isTyping &&
+      isOpen
+    ) {
+      setInputValue("Bisakah Anda rangkum profil perusahaan Amboja?")
+    }
+  }, [conversationPhase, isTutorialActive, isTyping, documentEditorPage, documentEditorTitle, isOpen])
+
   const handleSendMessage = () => {
     if (!inputValue.trim()) return
 
@@ -122,6 +153,43 @@ export function AssessmentAssistant({
     if (e.key === "Enter") {
       handleSendMessage()
     }
+  }
+
+  // Copy to clipboard functionality
+  const handleCopyMessage = async (messageText: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(messageText)
+      setCopiedMessageId(messageId)
+      toast({
+        title: "Copied to clipboard",
+        description: "Message has been copied successfully",
+      })
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedMessageId(null)
+      }, 2000)
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy message to clipboard",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Format message text for better readability
+  const formatMessageText = (text: string) => {
+    // Convert **text** to bold
+    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    
+    // Preserve line breaks and add proper spacing
+    formatted = formatted.replace(/\n/g, '<br/>')
+    
+    // Add extra spacing for better readability in bullet points
+    formatted = formatted.replace(/^- /gm, '• ')
+    
+    return formatted
   }
 
   if (!isOpen) return null
@@ -174,18 +242,46 @@ export function AssessmentAssistant({
                   </div>
                 </div>
               )}
-              <div
-                className={`p-3 rounded-lg ${
-                  message.type === "user"
-                    ? "bg-blue-500 text-white"
-                    : message.type === "reminder"
-                      ? "bg-indigo-800 text-white"
-                      : "bg-green-800 text-white"
-                }`}
-              >
-                <p className="text-sm">{message.text}</p>
+              <div className="relative group">
+                <div
+                  className={`p-3 rounded-lg ${
+                    message.type === "user"
+                      ? "bg-blue-500 text-white"
+                      : message.type === "reminder"
+                        ? "bg-indigo-800 text-white"
+                        : "bg-green-800 text-white"
+                  }`}
+                >
+                  <div 
+                    className="text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{ 
+                      __html: formatMessageText(message.text) 
+                    }}
+                  />
+                </div>
               </div>
-              <p className="text-xs text-gray-400 mt-1 text-right">{message.timestamp}</p>
+              
+              {/* Copy button and timestamp row */}
+              <div className="flex items-center justify-between mt-1">
+                {message.isBot ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyMessage(message.text, message.id)}
+                    className="h-6 w-6 p-1 opacity-60 hover:opacity-100 transition-opacity bg-transparent hover:bg-gray-700 text-gray-400 hover:text-gray-200"
+                    title="Copy message"
+                  >
+                    {copiedMessageId === message.id ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </Button>
+                ) : (
+                  <div /> // Empty div to maintain layout for user messages
+                )}
+                <p className="text-xs text-gray-400">{message.timestamp}</p>
+              </div>
             </div>
           </div>
         ))}
@@ -224,19 +320,27 @@ export function AssessmentAssistant({
               isTutorialActive || isTyping 
                 ? "Mohon tunggu..." 
                 : conversationPhase === 'readiness_check' 
-                  ? "Ketik jawaban Anda (Ya/Tidak)..."
+                  ? "Tekan Send untuk melanjutkan..."
                   : conversationPhase === 'clarity_check'
-                    ? "Ketik jawaban Anda (Ya, jelas/Tidak)..."
+                    ? "Tekan Send untuk melanjutkan..."
                     : "Ketik pesan atau ketik 'Help'..."
             }
             disabled={isTutorialActive || isTyping}
-            className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+              (conversationPhase === 'readiness_check' || conversationPhase === 'clarity_check') && !isTutorialActive && !isTyping
+                ? 'border-green-500 bg-green-900/20' 
+                : ''
+            }`}
           />
           <Button 
             onClick={handleSendMessage} 
             size="sm" 
             disabled={isTutorialActive || isTyping}
-            className="bg-blue-600 hover:bg-blue-700 text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`text-white p-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+              (conversationPhase === 'readiness_check' || conversationPhase === 'clarity_check') && !isTutorialActive && !isTyping
+                ? 'bg-green-600 hover:bg-green-700' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
             <Send className="w-4 h-4" />
           </Button>

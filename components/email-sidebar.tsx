@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface EmailSidebarProps {
   activeTab: string
@@ -19,6 +20,7 @@ const tabs = [
 
 export function EmailSidebar({ activeTab, onTabChange }: EmailSidebarProps) {
   const router = useRouter();
+  const { onboardingEmailSent, emailRead } = useAssessmentAssistant();
 
   return (
     <div className="w-80 bg-white border-r border-gray-200 h-full">
@@ -42,6 +44,7 @@ export function EmailSidebar({ activeTab, onTabChange }: EmailSidebarProps) {
       <div className="p-4">
         {tabs.map((tab) => {
           const Icon = tab.icon
+          const hasNewEmail = tab.id === "inbox" && onboardingEmailSent && !emailRead
           return (
             <button
               key={tab.id}
@@ -54,6 +57,9 @@ export function EmailSidebar({ activeTab, onTabChange }: EmailSidebarProps) {
             >
               <Icon className="w-5 h-5" />
               <span className="font-medium">{tab.label}</span>
+              {hasNewEmail && (
+                <div className="w-2 h-2 bg-red-500 rounded-full ml-auto"></div>
+              )}
             </button>
           )
         })}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { Layout } from "@/components/layout"
 import { MessengerChannelList } from "@/components/messenger-channel-list"
@@ -8,7 +8,7 @@ import { ActiveMessengerChannel } from "@/components/active-messenger-channel"
 import { MessengerEmptyState } from "@/components/messenger-empty-state"
 import { ParticipantSelection } from "@/components/participant-selection"
 import { ContactSelection } from "@/components/contact-selection"
-import { messengerChannelsData, onboardingChannel, type Channel } from "@/lib/messenger-data"
+import { messengerChannelsData, onboardingChannel, presidentDirectorChannel, type Channel, type Message } from "@/lib/messenger-data"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 
 interface ContactWithContext {
@@ -28,7 +28,30 @@ type Participant = {
 
 function MessengerPageContent() {
   const searchParams = useSearchParams()
-  const { onboardingChannelTriggered } = useAssessmentAssistant()
+  const { 
+    onboardingChannelTriggered, 
+    triggerOnboardingEmail, 
+    markMiaAsInteracted,
+    onboardingMessages,
+    conversationStage,
+    addOnboardingMessage,
+    setConversationStage,
+    presidentDirectorChannelTriggered,
+    startMissionBriefing,
+    handleMissionBriefingResponse,
+    aryaJoinedOnboarding,
+    aryaHasNewMessages,
+    onboardingHasNewMessages,
+    messengerTypingState,
+    clearMiaCompletionNotifications,
+    clearAryaNotifications,
+    triggerMiaCompletionPhase2,
+    miaMessages,
+    aryaMessages,
+    triggerAryaPhase2,
+    addMiaMessage,
+    setTypingState
+  } = useAssessmentAssistant()
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
   const [channels, setChannels] = useState<Channel[]>(messengerChannelsData)
@@ -36,67 +59,122 @@ function MessengerPageContent() {
   const [isContactAnimating, setIsContactAnimating] = useState(false)
   const [callEndProcessed, setCallEndProcessed] = useState(false)
   const [onboardingChannelAdded, setOnboardingChannelAdded] = useState(false)
+  const [onboardingTriggered, setOnboardingTriggered] = useState(false)
+  const [presidentDirectorChannelAdded, setPresidentDirectorChannelAdded] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
+  const onboardingTimeoutsRef = useRef<NodeJS.Timeout[]>([])
 
   // Handle call end redirect
   useEffect(() => {
     const callEnd = searchParams.get("callEnd")
     const contact = searchParams.get("contact")
 
-    if (callEnd && contact === "ezra" && !callEndProcessed) {
+    if (callEnd && (contact === "ezra" || contact === "arya") && !callEndProcessed) {
       setCallEndProcessed(true)
       
       // Use functional update to access the latest channels state
       setChannels((prevChannels) => {
-        // Find Ezra's channel
-        const ezraChannel = prevChannels.find((channel) => channel.name === "Peluang Sponsorship S24")
-        const ezraParticipant = ezraChannel?.participants.find((p) => p.name === "Ezra Kaell")
+        if (contact === "ezra") {
+          // Find Ezra's channel
+          const ezraChannel = prevChannels.find((channel) => channel.name === "Peluang Sponsorship S24")
+          const ezraParticipant = ezraChannel?.participants.find((p) => p.name === "Ezra Kaell")
 
-        if (ezraChannel && ezraParticipant) {
-          // Auto-select Ezra's channel and participant
-          setSelectedChannelId(ezraChannel.id)
-          setSelectedParticipant(ezraParticipant)
+          if (ezraChannel && ezraParticipant) {
+            // Auto-select Ezra's channel and participant
+            setSelectedChannelId(ezraChannel.id)
+            setSelectedParticipant(ezraParticipant)
 
-          // Add call end messages
-          const currentTime = new Date().toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })
+            // Add call end messages
+            const currentTime = new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
 
-          // Generate truly unique IDs with random strings
-          const randomStr1 = Math.random().toString(36).substring(2, 8)
-          const randomStr2 = Math.random().toString(36).substring(2, 8)
-          
-          const systemMessage = {
-            id: `msg-system-${Date.now()}-${randomStr1}`,
-            senderName: "System",
-            senderAvatar: "S",
-            content: callEnd === "complete" ? "Panggilan selesai (5:23 durasi)" : "Panggilan terputus (2:15 durasi)",
-            timestamp: currentTime,
-            isUser: false,
+            // Generate truly unique IDs with random strings
+            const randomStr1 = Math.random().toString(36).substring(2, 8)
+            const randomStr2 = Math.random().toString(36).substring(2, 8)
+            
+            const systemMessage = {
+              id: `msg-system-${Date.now()}-${randomStr1}`,
+              senderName: "System",
+              senderAvatar: "S",
+              content: callEnd === "complete" ? "Panggilan selesai (5:23 durasi)" : "Panggilan terputus (2:15 durasi)",
+              timestamp: currentTime,
+              isUser: false,
+            }
+
+            const ezraMessage = {
+              id: `msg-ezra-${Date.now()}-${randomStr2}`,
+              senderName: "Ezra Kaell",
+              senderAvatar: "EK",
+              content:
+                callEnd === "complete"
+                  ? "Terima kasih untuk diskusi yang produktif! Saya akan follow up action items yang kita bahas."
+                  : "Sepertinya panggilan kita terputus. Bisa kita lanjutkan di sini atau coba call lagi.",
+              timestamp: currentTime,
+              isUser: false,
+            }
+
+            // Return updated channels
+            return prevChannels.map((channel) =>
+              channel.id === ezraChannel.id
+                ? { ...channel, messages: [...channel.messages, systemMessage, ezraMessage] }
+                : channel,
+            )
           }
+        } else if (contact === "arya") {
+          // Find Arya's channel (President Director channel)
+          const aryaChannel = prevChannels.find((channel) => channel.id === "president-director-channel")
+          const aryaParticipant = aryaChannel?.participants.find((p) => p.name === "Arya Prajida")
 
-          const ezraMessage = {
-            id: `msg-ezra-${Date.now()}-${randomStr2}`,
-            senderName: "Ezra Kaell",
-            senderAvatar: "EK",
-            content:
-              callEnd === "complete"
-                ? "Terima kasih untuk diskusi yang produktif! Saya akan follow up action items yang kita bahas."
-                : "Sepertinya panggilan kita terputus. Bisa kita lanjutkan di sini atau coba call lagi.",
-            timestamp: currentTime,
-            isUser: false,
+          if (aryaChannel && aryaParticipant) {
+            // Auto-select Arya's channel and participant
+            setSelectedChannelId(aryaChannel.id)
+            setSelectedParticipant(aryaParticipant)
+
+            // Add call end messages
+            const currentTime = new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+
+            // Generate truly unique IDs with random strings
+            const randomStr1 = Math.random().toString(36).substring(2, 8)
+            const randomStr2 = Math.random().toString(36).substring(2, 8)
+            
+            const systemMessage = {
+              id: `msg-system-${Date.now()}-${randomStr1}`,
+              senderName: "System",
+              senderAvatar: "S",
+              content: callEnd === "complete" ? "Panggilan selesai (8:45 durasi)" : "Panggilan terputus (3:22 durasi)",
+              timestamp: currentTime,
+              isUser: false,
+            }
+
+            const aryaMessage = {
+              id: `msg-arya-${Date.now()}-${randomStr2}`,
+              senderName: "Arya Prajida",
+              senderAvatar: "AP",
+              content:
+                callEnd === "complete"
+                  ? "Terima kasih untuk percakapan yang menyenangkan! Saya senang bisa berkenalan dengan Anda. Selamat berkarya di Amboja!"
+                  : "Sepertinya koneksi kita terputus. Tidak apa-apa, kita bisa lanjutkan kapan-kapan lagi.",
+              timestamp: currentTime,
+              isUser: false,
+            }
+
+            // Return updated channels
+            return prevChannels.map((channel) =>
+              channel.id === aryaChannel.id
+                ? { ...channel, messages: [...channel.messages, systemMessage, aryaMessage] }
+                : channel,
+            )
           }
-
-          // Return updated channels
-          return prevChannels.map((channel) =>
-            channel.id === ezraChannel.id
-              ? { ...channel, messages: [...channel.messages, systemMessage, ezraMessage] }
-              : channel,
-          )
         }
         
-        // If no Ezra channel found, return unchanged
+        // If no matching channel found, return unchanged
         return prevChannels
       })
       
@@ -130,21 +208,25 @@ function MessengerPageContent() {
         const hasOnboardingChannel = prevChannels.some(channel => channel.id === onboardingChannel.id)
         
         if (!hasOnboardingChannel) {
-          // Create a new onboarding channel with fresh timestamps
+          // Create a new onboarding channel with persisted messages
           const newOnboardingChannel = {
             ...onboardingChannel,
-            messages: onboardingChannel.messages.map((message, index) => {
-              const currentTime = new Date()
-              currentTime.setSeconds(currentTime.getSeconds() + index * 30) // Stagger messages by 30 seconds
-              
-              return {
-                ...message,
-                timestamp: currentTime.toLocaleTimeString("en-US", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                }),
+            messages: getMessagesForParticipant(selectedParticipant).map((message, index) => {
+              // Only update timestamp for the initial message if it doesn't have one
+              if (!message.timestamp) {
+                const currentTime = new Date()
+                currentTime.setSeconds(currentTime.getSeconds() + index * 30) // Stagger messages by 30 seconds
+                
+                return {
+                  ...message,
+                  timestamp: currentTime.toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  }),
+                }
               }
+              return message
             }),
             lastActivity: new Date().toLocaleTimeString("en-US", {
               hour: "2-digit",
@@ -163,13 +245,142 @@ function MessengerPageContent() {
     }
   }, [onboardingChannelTriggered, onboardingChannelAdded])
 
+  // Handle President Director channel triggering
+  useEffect(() => {
+    if (presidentDirectorChannelTriggered && !presidentDirectorChannelAdded) {
+      setPresidentDirectorChannelAdded(true)
+      
+      // Add the president director channel to the top of the channels list
+      setChannels((prevChannels) => {
+        // Check if president director channel already exists
+        const hasPresidentDirectorChannel = prevChannels.some(channel => channel.id === presidentDirectorChannel.id)
+        
+        if (!hasPresidentDirectorChannel) {
+          // Create the president director channel with current timestamp
+          const newPresidentDirectorChannel = {
+            ...presidentDirectorChannel,
+            messages: presidentDirectorChannel.messages.map(message => ({
+              ...message,
+              timestamp: new Date().toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              }),
+            })),
+            lastActivity: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          }
+          
+          // Auto-select the president director channel and participant
+          setSelectedChannelId(newPresidentDirectorChannel.id)
+          setSelectedParticipant(newPresidentDirectorChannel.participants.find(p => p.name === "Arya Prajida") || null)
+          
+          return [newPresidentDirectorChannel, ...prevChannels]
+        }
+        
+        return prevChannels
+      })
+    }
+  }, [presidentDirectorChannelTriggered, presidentDirectorChannelAdded])
+
+  // Handle Arya joining the onboarding channel
+  useEffect(() => {
+    if (aryaJoinedOnboarding) {
+      setChannels((prevChannels) => {
+        return prevChannels.map(channel => {
+          if (channel.id === "onboarding-channel") {
+            // Check if Arya is already in the participants list
+            const hasArya = channel.participants.some(p => p.name === "Arya Prajida")
+            
+            if (!hasArya) {
+              // Add Arya as a participant
+              const aryaParticipant = {
+                name: "Arya Prajida",
+                avatar: "AP",
+                role: "President Director",
+                email: "arya.prajida@amboja.com",
+              }
+              
+              return {
+                ...channel,
+                participants: [...channel.participants, aryaParticipant],
+                messages: getMessagesForParticipant(selectedParticipant), // Use the latest messages from context
+                lastActivity: new Date().toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                }),
+              }
+            }
+          }
+          return channel
+        })
+      })
+    }
+  }, [aryaJoinedOnboarding, miaMessages, aryaMessages, selectedParticipant])
+
+  // Sync onboarding messages from context to channel messages
+  useEffect(() => {
+    setChannels((prevChannels) => {
+      return prevChannels.map(channel => {
+        if (channel.id === "onboarding-channel") {
+          return {
+            ...channel,
+            messages: getMessagesForParticipant(selectedParticipant), // Always sync the latest messages from context
+            lastActivity: getMessagesForParticipant(selectedParticipant).length > 0 
+              ? getMessagesForParticipant(selectedParticipant)[getMessagesForParticipant(selectedParticipant).length - 1].timestamp
+              : channel.lastActivity,
+          }
+        }
+        return channel
+      })
+    })
+  }, [miaMessages, aryaMessages, selectedParticipant])
+
+  // Sync typing state from context (for onboarding channel messages)
+  useEffect(() => {
+    if (selectedChannelId === "onboarding-channel") {
+      setIsTyping(messengerTypingState.isTyping)
+    }
+  }, [messengerTypingState, selectedChannelId])
+
   const handleChannelSelect = (channelId: string) => {
     setSelectedChannelId(channelId)
     setSelectedParticipant(null) // Reset participant selection when changing channels
   }
 
+  // Helper function to get messages based on selected participant
+  const getMessagesForParticipant = (participant: Participant | null) => {
+    if (!participant) return onboardingMessages
+    
+    if (selectedChannelId === "onboarding-channel") {
+      if (participant.name === "Mia Avira") {
+        return miaMessages
+      } else if (participant.name === "Arya Prajida") {
+        return aryaMessages
+      }
+    }
+    return onboardingMessages
+  }
+
   const handleSelectParticipant = (participant: Participant) => {
     setSelectedParticipant(participant)
+    
+    // Clear notifications and trigger continuation when user opens specific participant's chat
+    if (selectedChannelId === "onboarding-channel") {
+      if (participant.name === "Mia Avira") {
+        clearMiaCompletionNotifications()
+        // Trigger Phase 2 messages when user opens Mia's chat
+        triggerMiaCompletionPhase2()
+      } else if (participant.name === "Arya Prajida") {
+        clearAryaNotifications()
+        // Trigger Phase 2 messages when user opens Arya's chat
+        triggerAryaPhase2()
+      }
+    }
   }
 
   const handleAddNewChannel = () => {
@@ -252,6 +463,341 @@ function MessengerPageContent() {
 
   const selectedChannel = channels.find((channel) => channel.id === selectedChannelId)
 
+  // Centralized message sending handler
+  const handleSendMessage = (channelId: string, message: Message) => {
+    setChannels((prevChannels) => {
+      const updatedChannels = prevChannels.map(channel => 
+        channel.id === channelId 
+          ? { ...channel, messages: [...channel.messages, message] }
+          : channel
+      )
+      
+      return updatedChannels
+    })
+
+    // Also persist onboarding messages separately
+    if (channelId === "onboarding-channel") {
+      // Add to the appropriate message array based on selected participant
+      if (selectedParticipant?.name === "Mia Avira") {
+        addMiaMessage(message)
+      } else {
+        addOnboardingMessage(message)
+      }
+    }
+
+    // Handle onboarding flow responses from Mia Avira - moved outside setState
+    if (channelId === "onboarding-channel" && selectedParticipant?.name === "Mia Avira" && message.isUser) {
+      setConversationStage('responded')
+      markMiaAsInteracted() // Mark that user has interacted with Mia
+      
+      // Use setTimeout to ensure state has updated
+      setTimeout(() => {
+        handleMiaAviraResponse(message.content, channelId)
+      }, 100)
+    }
+  }
+
+  // Handle Mia Avira response logic - FIXED: Immediate response trigger
+  const handleMiaAviraResponse = (userMessage: string, channelId: string) => {
+    console.log('Debug - userMessage:', userMessage)
+    console.log('Debug - conversationStage:', conversationStage)
+    
+    // Pattern detection for specific responses (immediate, no state dependency)
+    const isFeedbackResponse = /\b(ya|iya|baik|setuju|bagus|membantu|sangat|positif|terbantu|siap)\b/i.test(userMessage.toLowerCase()) && 
+                              conversationStage === 'waiting_for_response'
+    
+    const emailConfirmationRegexTest = /\b(ya.*terima|sudah.*terima|terima.*email|email.*terima|dapat.*email|email.*dapat)\b/i.test(userMessage.toLowerCase())
+    const isEmailConfirmation = emailConfirmationRegexTest && (conversationStage === 'mission_phase' || conversationStage === 'responded')
+    
+    console.log('Debug - emailConfirmationRegexTest:', emailConfirmationRegexTest)
+    console.log('Debug - conversationStage === mission_phase:', conversationStage === 'mission_phase')
+    console.log('Debug - conversationStage === responded:', conversationStage === 'responded')
+    
+    // Use persisted messages only for duplicate checking
+    const messagesToCheck = channelId === "onboarding-channel" ? getMessagesForParticipant(selectedParticipant) : (channels.find(c => c.id === channelId)?.messages || [])
+    const hasThankYouMessage = messagesToCheck.some(msg => msg.content.includes("Baik, terima kasih atas jawaban anda"))
+    const hasEmailConfirmationMessage = messagesToCheck.some(msg => msg.content.includes("Baik, terima kasih konfirmasinya"))
+    
+    console.log('Debug - isFeedbackResponse:', isFeedbackResponse)
+    console.log('Debug - isEmailConfirmation:', isEmailConfirmation)
+    console.log('Debug - hasThankYouMessage:', hasThankYouMessage)
+    console.log('Debug - hasEmailConfirmationMessage:', hasEmailConfirmationMessage)
+    
+    // Handle email confirmation response
+    if (isEmailConfirmation && !hasEmailConfirmationMessage) {
+      console.log('Debug - Triggering mission briefing!')
+      // Use the new mission briefing system instead
+      startMissionBriefing(handleSendMessage)
+      return
+    }
+    
+    // Handle feedback response - immediate trigger without counting messages
+    if (isFeedbackResponse && !hasThankYouMessage) {
+      // Send follow-up messages from Mia with typing animation
+      const messages = [
+        {
+          id: `msg-mia-thanks-${Date.now()}`,
+          content: "Baik, terima kasih atas jawaban anda.",
+        },
+        {
+          id: `msg-mia-mission-intro-${Date.now() + 1}`,
+          content: "Sebagai bagian dari onboarding, saya ingin memberikan Anda sebuah misi pertama. Ini akan membantu Anda terbiasa dengan alur kerja dan platform kita.",
+        },
+        {
+          id: `msg-mia-email-${Date.now() + 2}`,
+          content: "Saya baru saja mengirimkan **Email** dengan judul **'Misi Pertama Anda di Amboja'**. Bisa tolong cek dan kabari saya melalui fitur chat ini jika sudah Anda terima?",
+        }
+      ]
+
+      // Send messages with typing animation
+      messages.forEach((message, index) => {
+        setTimeout(() => {
+          // Start typing
+          setIsTyping(true)
+          
+          // After typing delay, send message
+          setTimeout(() => {
+            const fullMessage = {
+              ...message,
+              senderName: "Mia Avira",
+              senderAvatar: "MA",
+              timestamp: new Date().toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              }),
+              isUser: false,
+            }
+            handleSendMessage(channelId, fullMessage)
+            setIsTyping(false)
+            
+            // Trigger email after the last message
+            if (index === messages.length - 1) {
+              setTimeout(() => {
+                triggerOnboardingEmail()
+                setConversationStage('mission_phase')
+              }, 1000)
+            }
+          }, 2000) // 2 second typing delay
+        }, index * 3500 + 1500) // Stagger messages by 3.5 seconds, start after 1.5 seconds
+      })
+    } 
+    
+    // Handle non-positive feedback response - immediate trigger
+    const isNonPositiveFeedback = !isFeedbackResponse && conversationStage === 'waiting_for_response' && !hasThankYouMessage
+    if (isNonPositiveFeedback) {
+      // Handle non-positive response with typing animation
+      const messages = [
+        {
+          id: `msg-mia-clarification-${Date.now()}`,
+          content: "Terima kasih atas feedback Anda. Jika ada hal yang perlu diperbaiki dari AI Assistant kami, tim akan mengevaluasinya. Mari kita lanjutkan dengan proses onboarding.",
+        },
+        {
+          id: `msg-mia-mission-intro-alt-${Date.now() + 1}`,
+          content: "Sebagai bagian dari onboarding, saya ingin memberikan Anda sebuah misi pertama. Ini akan membantu Anda terbiasa dengan alur kerja dan platform kita.",
+        },
+        {
+          id: `msg-mia-email-alt-${Date.now() + 2}`,
+          content: "Saya baru saja mengirimkan **Email** dengan judul **'Misi Pertama Anda di Amboja'**. Bisa tolong cek dan kabari saya melalui fitur chat ini jika sudah Anda terima?",
+        }
+      ]
+
+      // Send messages with typing animation
+      messages.forEach((message, index) => {
+        setTimeout(() => {
+          // Start typing
+          setIsTyping(true)
+          
+          // After typing delay, send message
+          setTimeout(() => {
+            const fullMessage = {
+              ...message,
+              senderName: "Mia Avira",
+              senderAvatar: "MA",
+              timestamp: new Date().toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              }),
+              isUser: false,
+            }
+            handleSendMessage(channelId, fullMessage)
+            setIsTyping(false)
+            
+            // Trigger email after the last message
+            if (index === messages.length - 1) {
+              setTimeout(() => {
+                triggerOnboardingEmail()
+                setConversationStage('mission_phase')
+              }, 1000)
+            }
+          }, 2000) // 2 second typing delay
+        }, index * 3500 + 1500) // Stagger messages by 3.5 seconds, start after 1.5 seconds
+      })
+    }
+    
+    // Handle mission briefing responses (task readiness and clarity checks)
+    const isMissionBriefingResponse = conversationStage === 'task_readiness_check' || conversationStage === 'task_clarity_check'
+    const isPositiveResponse = /\b(ya|iya|baik|setuju|siap|jelas|cukup)\b/i.test(userMessage.toLowerCase())
+    
+    console.log('Debug - isMissionBriefingResponse:', isMissionBriefingResponse)
+    console.log('Debug - Mission briefing isPositiveResponse:', isPositiveResponse)
+    
+    if (isMissionBriefingResponse && isPositiveResponse) {
+      console.log('Debug - Calling handleMissionBriefingResponse')
+      handleMissionBriefingResponse(userMessage, handleSendMessage)
+      return
+    }
+  }
+
+  // Handle email confirmation response and continue with task assignment
+  const handleEmailConfirmationResponse = (channelId: string) => {
+    const messages = [
+      {
+        id: `msg-mia-confirmation-${Date.now()}`,
+        content: "Baik, terima kasih konfirmasinya!",
+      },
+      {
+        id: `msg-mia-task-intro-${Date.now() + 1}`,
+        content: "Oke, misi Anda sederhana saja. Di email itu ada lampiran bernama 'Profil Perusahaan Amboja'.",
+      },
+      {
+        id: `msg-mia-task-list-${Date.now() + 2}`,
+        content: `Tugas Anda:
+
+1. **Download** lampiran tersebut.
+
+2. Lalu, **buka dan pelajari** isinya melalui menu **Document**.
+
+3. Setelah itu, **buat sebuah dokumen baru** dengan judul **'Apa yang Saya Ketahui Tentang Amboja'**. Isinya adalah rangkuman singkat pemahaman Anda tentang perusahaan kita.
+
+4. Terakhir, **balas email saya** tadi dan **lampirkan** dokumen rangkuman yang sudah Anda buat.`,
+      },
+      {
+        id: `msg-mia-ai-hint-${Date.now() + 3}`,
+        content: "Sedikit tips dari saya: Jangan ragu untuk minta bantuan AI Assistant kita untuk merangkum poin penting dari dokumen tersebut. Justru itu adalah salah satu tujuan platform PortrAI ini, yaitu membantu Anda mengolah informasi dengan cepat.",
+      },
+      {
+        id: `msg-mia-encouragement-${Date.now() + 4}`,
+        content: "Santai saja, tidak ada jawaban benar atau salah. Kami hanya ingin melihat bagaimana Anda menangkap dan mengolah informasi.",
+      },
+      {
+        id: `msg-mia-closing-${Date.now() + 5}`,
+        content: "Selamat mengerjakan misi pertama Anda!",
+      }
+    ]
+
+    // Send messages with typing animation
+    messages.forEach((message, index) => {
+      setTimeout(() => {
+        // Start typing
+        setIsTyping(true)
+        
+        // After typing delay, send message
+        setTimeout(() => {
+          const fullMessage = {
+            ...message,
+            senderName: "Mia Avira",
+            senderAvatar: "MA",
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+            isUser: false,
+          }
+          handleSendMessage(channelId, fullMessage)
+          setIsTyping(false)
+        }, 2000) // 2 second typing delay
+      }, index * 3000) // 3 second delay between messages
+    })
+  }
+
+  // Handle onboarding trigger when Mia is selected
+  const handleOnboardingTrigger = () => {
+    // Check if we already have both welcome and question messages in persisted state
+    const currentMessages = getMessagesForParticipant(selectedParticipant)
+    const hasWelcomeMessage = currentMessages.some(msg => msg.content.includes("Selamat datang di Amboja"))
+    const hasQuestionMessage = currentMessages.some(msg => msg.content.includes("Bagaimana sejauh ini"))
+    
+    console.log('Tutorial check:', { hasWelcomeMessage, hasQuestionMessage, messagesCount: currentMessages.length, onboardingTriggered })
+    
+    if (hasWelcomeMessage && hasQuestionMessage) {
+      console.log('Both tutorial messages already exist, skipping')
+      return // Messages already added
+    }
+    
+    if (onboardingTriggered) {
+      console.log('Tutorial already triggered, skipping')
+      return // Already triggered
+    }
+    
+    console.log('Starting tutorial flow')
+    setOnboardingTriggered(true)
+    
+    // Clear any existing timeouts
+    onboardingTimeoutsRef.current.forEach(timeout => clearTimeout(timeout))
+    onboardingTimeoutsRef.current = []
+    
+    // Define the remaining messages with truly unique IDs
+    const baseTimestamp = Date.now()
+    const remainingMessages = [
+      {
+        id: `onboarding-auto-${baseTimestamp}-${Math.random().toString(36).substring(2)}-1`,
+        senderName: "Mia Avira",
+        senderAvatar: "MA",
+        content: "Selamat datang di Amboja. Saya turut senang akhirnya Anda bergabung dengan tim kami hari ini.",
+        isUser: false,
+      },
+      {
+        id: `onboarding-auto-${baseTimestamp}-${Math.random().toString(36).substring(2)}-2`,
+        senderName: "Mia Avira",
+        senderAvatar: "MA",
+        content: "Bagaimana sejauh ini? Apakah sesi perkenalan dengan AI Assistant kami cukup membantu?",
+        isUser: false,
+      }
+    ]
+
+    // Simulate typing for each message
+    remainingMessages.forEach((message, index) => {
+      const timeout1 = setTimeout(() => {
+        console.log(`Starting tutorial message ${index + 1}:`, message.content)
+        // Start typing indicator for tutorial messages (Mia)
+        setTypingState({ isTyping: true, typingUser: "Mia Avira" })
+        
+        // After typing delay, add message
+        const timeout2 = setTimeout(() => {
+          const messageWithTimestamp = {
+            ...message,
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          }
+          console.log(`Sending tutorial message ${index + 1}:`, messageWithTimestamp)
+          // Add message directly to Mia's message array since these are from Mia
+          addMiaMessage(messageWithTimestamp)
+          setTypingState({ isTyping: false })
+          
+          // Update conversation stage when the question is asked
+          if (index === 1) { // The second message in the array (index 1) is the question
+            setConversationStage('waiting_for_response')
+          }
+        }, 2000) // 2 second typing delay
+        onboardingTimeoutsRef.current.push(timeout2)
+      }, index * 3000) // Stagger messages by 3 seconds
+      onboardingTimeoutsRef.current.push(timeout1)
+    })
+  }
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      onboardingTimeoutsRef.current.forEach(timeout => clearTimeout(timeout))
+    }
+  }, [])
+
   return (
     <Layout>
         <div className="h-[calc(100vh-120px)] flex px-6 pb-6">
@@ -301,7 +847,19 @@ function MessengerPageContent() {
                   </div>
                 </div>
               ) : (
-                <ActiveMessengerChannel channel={selectedChannel} selectedParticipant={selectedParticipant} />
+                <ActiveMessengerChannel 
+                  channel={selectedChannel} 
+                  selectedParticipant={selectedParticipant}
+                  onSendMessage={handleSendMessage}
+                  onOnboardingTrigger={handleOnboardingTrigger}
+                  isTyping={isTyping}
+                  typingUser={messengerTypingState.typingUser}
+                  conversationStage={conversationStage}
+                  clearMiaCompletionNotifications={clearMiaCompletionNotifications}
+                  clearAryaNotifications={clearAryaNotifications}
+                  triggerMiaCompletionPhase2={triggerMiaCompletionPhase2}
+                  getMessagesForParticipant={getMessagesForParticipant}
+                />
               )}
             </div>
           )}

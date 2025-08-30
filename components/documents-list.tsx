@@ -1,13 +1,55 @@
 "use client"
 
 import Link from "next/link"
-import { Folder, FileText } from "lucide-react"
+import { Folder, FileText, Plus } from "lucide-react"
 import { documentsData } from "@/lib/documents-data"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { useDocuments } from "@/contexts/documents-context"
+import { Button } from "@/components/ui/button"
 
 export function DocumentsList() {
+  const { downloadedDocuments } = useAssessmentAssistant()
+  const { savedDocuments } = useDocuments()
+  
+  // Helper function to parse date strings and convert to Date objects
+  const parseDate = (dateStr: string): Date => {
+    // Handle different date formats
+    if (dateStr.includes('Jan')) return new Date(dateStr.replace('Jan', 'January'))
+    if (dateStr.includes('Feb')) return new Date(dateStr.replace('Feb', 'February'))
+    if (dateStr.includes('Mar')) return new Date(dateStr.replace('Mar', 'March'))
+    if (dateStr.includes('Apr')) return new Date(dateStr.replace('Apr', 'April'))
+    if (dateStr.includes('May')) return new Date(dateStr.replace('May', 'May'))
+    if (dateStr.includes('Jun')) return new Date(dateStr.replace('Jun', 'June'))
+    if (dateStr.includes('Jul')) return new Date(dateStr.replace('Jul', 'July'))
+    if (dateStr.includes('Aug')) return new Date(dateStr.replace('Aug', 'August'))
+    if (dateStr.includes('Sep')) return new Date(dateStr.replace('Sep', 'September'))
+    if (dateStr.includes('Oct')) return new Date(dateStr.replace('Oct', 'October'))
+    if (dateStr.includes('Nov')) return new Date(dateStr.replace('Nov', 'November'))
+    if (dateStr.includes('Dec')) return new Date(dateStr.replace('Dec', 'December'))
+    
+    // Fallback for other formats
+    return new Date(dateStr)
+  }
+  
+  // Combine original files with downloaded documents and saved documents, then sort by date (newest first)
+  const allFiles = [...documentsData.allFiles, ...downloadedDocuments, ...savedDocuments]
+    .sort((a, b) => {
+      const dateA = parseDate(a.date)
+      const dateB = parseDate(b.date)
+      return dateB.getTime() - dateA.getTime() // Newest first
+    })
+  
   return (
     <div className="px-6 pb-6">
-      <h1 className="text-4xl font-bold text-gray-900 mb-8">Documents</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-4xl font-bold text-gray-900">Documents</h1>
+        <Link href="/documents/editor">
+          <Button className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Create Document
+          </Button>
+        </Link>
+      </div>
 
       {/* Folders Section */}
       <div className="mb-12">
@@ -41,7 +83,7 @@ export function DocumentsList() {
             <div>Folder</div>
           </div>
           <div className="divide-y divide-gray-200">
-            {documentsData.allFiles.map((file) => {
+            {allFiles.map((file) => {
               const folder = documentsData.folders.find((f) => f.id === file.folderId)
               return (
                 <Link

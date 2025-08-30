@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Layout } from "@/components/layout"
 import { ComposeContactSelection } from "@/components/compose-contact-selection"
@@ -25,6 +25,9 @@ import {
 } from "lucide-react"
 import { documentsData } from "@/lib/documents-data"
 import { cn } from "@/lib/utils"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { useToast } from "@/hooks/use-toast"
+import { useDocuments } from "@/contexts/documents-context"
 
 // Type for tracking selected documents and their pages
 export type SelectedDocumentsMap = Record<string, number[]> // fileId -> array of selected page numbers
@@ -55,6 +58,9 @@ const shuffledTags = shuffleArray(allAvailableTags)
 
 export default function ComposePage() {
   const router = useRouter()
+  const { triggerEmailReplyWithAttachment } = useAssessmentAssistant()
+  const { toast } = useToast()
+  const { savedDocuments } = useDocuments()
   const [showContactSelection, setShowContactSelection] = useState(false)
   const [showDocumentSelection, setShowDocumentSelection] = useState(false)
   const [isContactAnimating, setIsContactAnimating] = useState(false)
@@ -66,6 +72,8 @@ export default function ComposePage() {
   const [subject, setSubject] = useState<string>("")
   const [message, setMessage] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+
+
 
   const handleOpenContactSelection = () => {
     setShowContactSelection(true)
@@ -144,11 +152,34 @@ export default function ComposePage() {
     setTimeout(() => setShowDocumentSelection(false), 300)
   }
 
+  const handleSendEmail = () => {
+    // Check if this is a reply to Mia's email with attachments
+    const isMiaEmail = recipient === "mia.avira@amboja.com" || recipient === "mia@amboja.com"
+    const hasAttachments = Object.keys(attachedDocuments).length > 0
+    const isReplySubject = subject.toLowerCase().includes("re:") || 
+                          subject.toLowerCase().includes("misi pertama") ||
+                          subject.toLowerCase().includes("amboja")
+    
+    if (isMiaEmail && hasAttachments && isReplySubject) {
+      // This is a reply to Mia's email with attachments - trigger the completion flow
+      triggerEmailReplyWithAttachment()
+    }
+    
+    // Simulate email sending
+    toast({
+      title: "Email Terkirim",
+      description: `Email berhasil dikirim ke ${recipient}!`,
+    })
+    
+    // Navigate back to email list
+    router.push("/email")
+  }
+
   // Calculate total selected pages
   const totalSelectedPages = Object.values(selectedDocuments).reduce((sum, pages) => sum + pages.length, 0)
   const totalAttachedPages = Object.values(attachedDocuments).reduce((sum, pages) => sum + pages.length, 0)
 
-  // Get file details for attached documents (updated to handle root files)
+  // Get file details for attached documents (updated to handle root files and saved documents)
   const getFileDetails = (fileId: string) => {
     // Check in folders first
     for (const folder of documentsData.folders) {
@@ -158,6 +189,12 @@ export default function ComposePage() {
     // Check in root files
     const rootFile = documentsData.rootFiles.find((f) => f.id === fileId)
     if (rootFile) return rootFile
+
+    // Check in saved documents (already converted to DocumentFile format)
+    const savedDoc = savedDocuments.find((doc) => doc.id === fileId)
+    if (savedDoc) {
+      return savedDoc
+    }
 
     return null
   }
@@ -327,7 +364,11 @@ export default function ComposePage() {
                 <Button variant="outline" disabled>
                   Simpan sebagai Draft
                 </Button>
-                <Button className="bg-gray-800 hover:bg-gray-700 text-white" disabled={isSendButtonDisabled}>
+                <Button 
+                  className="bg-gray-800 hover:bg-gray-700 text-white" 
+                  disabled={isSendButtonDisabled}
+                  onClick={handleSendEmail}
+                >
                   Kirim
                 </Button>
               </div>
@@ -343,8 +384,18 @@ export default function ComposePage() {
               isAnimating={isContactAnimating}
             />
           )}
+        </div>
 
-          {showDocumentSelection && (
+        {/* Document Selection Panel - Fixed Position with Backdrop */}
+        {showDocumentSelection && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className={`fixed inset-0 bg-black bg-opacity-25 z-40 transition-opacity duration-300 ${
+                isDocumentAnimating ? "opacity-100" : "opacity-0"
+              }`}
+              onClick={handleCloseDocumentSelection}
+            />
             <ComposeDocumentSelection
               selectedDocuments={selectedDocuments}
               onSelectionChange={handleDocumentSelectionChange}
@@ -352,8 +403,8 @@ export default function ComposePage() {
               onAttach={handleAttachDocuments}
               isAnimating={isDocumentAnimating}
             />
-          )}
-        </div>
+          </>
+        )}
       </Layout>
   )
 }

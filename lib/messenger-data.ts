@@ -22,6 +22,81 @@ export interface Channel {
   lastActivity: string
 }
 
+// President Director Channel - This will be dynamically added after Mia completion
+export const presidentDirectorChannel: Channel = {
+  id: "president-director-channel",
+  name: "Discussion with President Director",
+  participants: [
+    {
+      name: "You",
+      avatar: "Y",
+      role: "New Employee",
+      email: "you@company.com",
+    },
+    {
+      name: "Arya Prajida",
+      avatar: "AP",
+      role: "President Director",
+      email: "arya.prajida@amboja.com",
+    },
+  ],
+  messages: [
+    {
+      id: "president-intro-1",
+      senderName: "Arya Prajida",
+      senderAvatar: "AP",
+      content: "Halo Bapak Dwiky Cahyo, perkenalkan saya Arya Prajida, President Director di Amboja.",
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      isUser: false,
+    },
+    {
+      id: "president-intro-2",
+      senderName: "Arya Prajida",
+      senderAvatar: "AP",
+      content: "Senang sekali akhirnya bisa berkenalan dengan Anda dan tim kami hari ini.",
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      isUser: false,
+    },
+    {
+      id: "president-intro-3",
+      senderName: "Arya Prajida",
+      senderAvatar: "AP",
+      content: "Saya baru saja membaca rangkuman yang Anda buat tentang Amboja, dan terus terang saya sangat terkesan dengan perspektif Anda.",
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      isUser: false,
+    },
+    {
+      id: "president-intro-4",
+      senderName: "Arya Prajida",
+      senderAvatar: "AP",
+      content: "Apakah Anda ada waktu sekitar 5-10 menit sekarang untuk kita terhubung lewat **Voice Call** singkat?",
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+      isUser: false,
+    },
+  ],
+  lastActivity: new Date().toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }),
+}
+
 // HR Onboarding Channel - This will be dynamically added when triggered
 export const onboardingChannel: Channel = {
   id: "onboarding-channel",

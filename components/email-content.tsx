@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Eye,
   Download,
@@ -16,14 +16,24 @@ import {
   AlignCenter,
   AlignRight,
   Send,
+  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { useToast } from "@/hooks/use-toast"
+import { ComposeDocumentSelection } from "@/components/compose-document-selection"
+import { documentsData } from "@/lib/documents-data"
+import { useRouter } from "next/navigation"
+import { useDocuments } from "@/contexts/documents-context"
 
 interface EmailContentProps {
   emailId: string
 }
+
+// Type for tracking selected documents and their pages
+type SelectedDocumentsMap = Record<string, number[]> // fileId -> array of selected page numbers
 
 const emailData = {
   "first-mission": {
@@ -38,26 +48,9 @@ const emailData = {
 
 Selamat datang di Amboja! Kami sangat senang Anda bergabung dengan tim kami.
 
-Sebagai bagian dari proses onboarding, kami telah menyiapkan misi pertama yang akan membantu Anda terbiasa dengan alur kerja dan platform yang digunakan di Amboja.
+Sebagai bagian dari proses onboarding, saya melampirkan profil perusahaan Amboja untuk membantu Anda memahami visi, misi, dan budaya kerja kami.
 
-**MISI PERTAMA: EKSPLORASI PLATFORM**
-
-Tugas Anda adalah:
-
-1. **Eksplorasi Fitur Email**: Cobalah untuk membalas email ini dan kirimkan konfirmasi bahwa Anda telah menerima misi ini.
-
-2. **Jelajahi Documents**: Buka halaman Documents dan lihat folder "Onboarding Materials". Di dalamnya terdapat panduan lengkap tentang budaya kerja dan prosedur operasional Amboja.
-
-3. **Coba Fitur Chat**: Kembali ke fitur Messenger dan beritahu saya melalui chat bahwa Anda telah membaca email ini dan siap untuk memulai tugas-tugas berikutnya.
-
-4. **Familiarisasi dengan Call System**: Pada saat yang tepat, tim akan mengundang Anda untuk bergabung dalam panggilan tim untuk perkenalan lebih lanjut.
-
-**Catatan Penting:**
-- Tidak ada deadline yang ketat untuk misi ini, tetapi usahakan untuk menyelesaikannya dalam 1-2 hari ke depan
-- Jika ada pertanyaan atau kendala, jangan ragu untuk menghubungi saya melalui chat atau email
-- Misi ini dirancang untuk membantu Anda beradaptasi dengan lingkungan kerja digital di Amboja
-
-Sekali lagi, selamat datang di keluarga besar Amboja. Kami menantikan kontribusi dan kolaborasi Anda!
+Silakan luangkan waktu untuk membaca dokumen tersebut. Jika ada pertanyaan, jangan ragu untuk menghubungi saya melalui chat atau email.
 
 Salam hangat,
 
@@ -65,9 +58,7 @@ Mia Avira
 VP of Human Resources  
 Amboja Technology`,
     attachments: [
-      "Employee Handbook - Amboja 2024.pdf",
-      "Platform User Guide.pdf", 
-      "Emergency Contacts & Procedures.pdf",
+      "Profil Perusahaan Amboja.pdf",
     ],
   },
   "ux-researcher": {
@@ -104,12 +95,172 @@ President Director`,
 }
 
 export function EmailContent({ emailId }: EmailContentProps) {
+  const router = useRouter()
   const [replyMode, setReplyMode] = useState<"none" | "reply" | "forward">("none")
   const [replyContent, setReplyContent] = useState("")
   const [forwardRecipient, setForwardRecipient] = useState("")
   const [showContactSelection, setShowContactSelection] = useState(false)
+  const [showDocumentSelection, setShowDocumentSelection] = useState(false)
+  const [isDocumentAnimating, setIsDocumentAnimating] = useState(false)
+  const [selectedDocuments, setSelectedDocuments] = useState<SelectedDocumentsMap>({})
+  const [attachedDocuments, setAttachedDocuments] = useState<SelectedDocumentsMap>({})
+  const { savedDocuments } = useDocuments()
+  const { markEmailAsRead, addDownloadedDocument, triggerEmailReplyWithAttachment } = useAssessmentAssistant()
+  const { toast } = useToast()
 
   const email = emailData[emailId as keyof typeof emailData]
+
+  // Mark email as read when first-mission email is opened
+  useEffect(() => {
+    if (emailId === "first-mission") {
+      markEmailAsRead()
+    }
+  }, [emailId, markEmailAsRead])
+
+
+
+  const handleDownload = (attachmentName: string) => {
+    if (emailId === "first-mission" && attachmentName === "Profil Perusahaan Amboja.pdf") {
+      const document = {
+        id: "profil-perusahaan-amboja",
+        name: "Profil Perusahaan Amboja.pdf",
+        date: new Date().toLocaleDateString("id-ID", { 
+          day: "numeric", 
+          month: "short", 
+          year: "numeric" 
+        }),
+        owner: { name: "Mia Avira", avatar: "MA" },
+        folderId: null,
+        content: {
+          title: "Profil Perusahaan Amboja",
+          author: "Mia Avira",
+          lastUpdate: new Date().toLocaleDateString("id-ID", { 
+            day: "numeric", 
+            month: "long", 
+            year: "numeric" 
+          }),
+          pages: 8,
+          sections: [
+            {
+              title: "Tentang Amboja",
+              content: `Amboja adalah perusahaan teknologi yang berfokus pada pengembangan solusi digital inovatif untuk berbagai industri. Didirikan pada tahun 2018, kami telah berkembang menjadi salah satu pemain utama dalam ekosistem teknologi Indonesia.
+
+Visi kami adalah menjadi perusahaan teknologi terdepan yang memberikan dampak positif bagi masyarakat melalui inovasi berkelanjutan. Misi kami meliputi pengembangan produk teknologi yang user-friendly, pemberdayaan talenta lokal, dan kontribusi terhadap transformasi digital Indonesia.
+
+Nilai-nilai perusahaan kami: Inovasi, Kolaborasi, Integritas, Keberlanjutan, dan Kepedulian terhadap Pelanggan.`
+            },
+            {
+              title: "Budaya Kerja",
+              content: `Di Amboja, kami percaya bahwa budaya kerja yang positif adalah kunci kesuksesan. Kami menerapkan prinsip work-life balance, mendorong kreativitas dan inovasi, serta membangun lingkungan kerja yang inklusif dan supportif.
+
+Tim kami terdiri dari profesional muda yang passionate dan berpengalaman dari berbagai latar belakang. Kami menghargai keberagaman dan percaya bahwa perbedaan perspektif akan menghasilkan solusi yang lebih baik.
+
+Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui program pelatihan, mentoring, dan kesempatan untuk berkontribusi dalam proyek-proyek menantang.`
+            }
+          ],
+        },
+      }
+      
+      addDownloadedDocument(document)
+      
+      // Simulate download
+      toast({
+        title: "Dokumen Berhasil Didownload",
+        description: `Dokumen "${attachmentName}" berhasil didownload dan ditambahkan ke Documents!`,
+      })
+    }
+  }
+
+  // Document attachment handlers
+  const handleOpenDocumentSelection = () => {
+    setShowDocumentSelection(true)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsDocumentAnimating(true)
+      })
+    })
+  }
+
+  const handleDocumentSelectionChange = (newSelection: SelectedDocumentsMap) => {
+    setSelectedDocuments(newSelection)
+  }
+
+  const handleAttachDocuments = () => {
+    // Move selected documents to attached documents
+    setAttachedDocuments((prev) => ({ ...prev, ...selectedDocuments }))
+    // Clear selection and close panel
+    setSelectedDocuments({})
+    setIsDocumentAnimating(false)
+    setTimeout(() => setShowDocumentSelection(false), 300)
+  }
+
+  const handleCloseDocumentSelection = () => {
+    setIsDocumentAnimating(false)
+    setTimeout(() => setShowDocumentSelection(false), 300)
+  }
+
+  const handleRemoveAttachedDocument = (fileId: string) => {
+    setAttachedDocuments((prev) => {
+      const newAttached = { ...prev }
+      delete newAttached[fileId]
+      return newAttached
+    })
+  }
+
+  // Get file details for attached documents
+  const getFileDetails = (fileId: string) => {
+    // Check in folders first
+    for (const folder of documentsData.folders) {
+      const file = folder.files.find((f) => f.id === fileId)
+      if (file) return file
+    }
+    // Check in root files
+    const rootFile = documentsData.rootFiles.find((f) => f.id === fileId)
+    if (rootFile) return rootFile
+
+    // Check in saved documents (already converted to DocumentFile format)
+    const savedDoc = savedDocuments.find((doc) => doc.id === fileId)
+    if (savedDoc) {
+      return savedDoc
+    }
+
+    return null
+  }
+
+  // Handle send email reply
+  const handleSendReply = () => {
+    if (!replyContent.trim()) {
+      toast({
+        title: "Pesan Kosong",
+        description: "Harap isi pesan balasan!",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Check if this is a reply to Mia's email with attachments
+    const isMiaEmail = emailId === "first-mission"
+    const hasAttachments = Object.keys(attachedDocuments).length > 0
+    
+    if (isMiaEmail && hasAttachments) {
+      // This is a reply to Mia's email with attachments - trigger the completion flow
+      triggerEmailReplyWithAttachment()
+    }
+    
+    // Simulate email sending
+    toast({
+      title: "Balasan Terkirim",
+      description: "Email balasan berhasil dikirim!",
+    })
+    
+    // Reset reply mode and content
+    setReplyMode("none")
+    setReplyContent("")
+    setAttachedDocuments({})
+    
+    // Navigate back to email list
+    router.push("/email")
+  }
 
   if (!email) return null
 
@@ -229,6 +380,39 @@ export function EmailContent({ emailId }: EmailContentProps) {
               </Button>
             </div>
 
+            {/* Attached Documents List */}
+            {Object.keys(attachedDocuments).length > 0 && (
+              <div className="space-y-2 mb-4">
+                <h4 className="text-sm font-medium text-gray-700">Dokumen Terlampir:</h4>
+                <div className="space-y-2">
+                  {Object.entries(attachedDocuments).map(([fileId, pages]) => {
+                    const file = getFileDetails(fileId)
+                    if (!file) return null
+
+                    return (
+                      <div key={fileId} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <FileText className="w-4 h-4 text-gray-600" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{file.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {pages.length} halaman terpilih dari {file.content.pages || 0}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveAttachedDocument(fileId)}
+                          className="p-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Message Area */}
             <Textarea
               value={replyContent}
@@ -239,14 +423,17 @@ export function EmailContent({ emailId }: EmailContentProps) {
 
             {/* Action Buttons */}
             <div className="flex items-center justify-between">
-              <Button variant="outline" disabled>
+              <Button variant="outline" onClick={handleOpenDocumentSelection}>
                 Lampirkan Dokumen
               </Button>
               <div className="flex gap-3">
                 <Button variant="outline" disabled>
                   Simpan sebagai Draft
                 </Button>
-                <Button className="bg-gray-800 hover:bg-gray-700 text-white" disabled>
+                <Button 
+                  className="bg-gray-800 hover:bg-gray-700 text-white"
+                  onClick={handleSendReply}
+                >
                   <Send className="w-4 h-4 mr-2" />
                   Kirim
                 </Button>
@@ -279,7 +466,12 @@ export function EmailContent({ emailId }: EmailContentProps) {
                     <Button variant="ghost" size="sm" disabled>
                       <Eye className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" disabled>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDownload(attachment)}
+                      className="hover:bg-blue-100 hover:text-blue-600"
+                    >
                       <Download className="w-4 h-4" />
                     </Button>
                   </div>
@@ -289,10 +481,6 @@ export function EmailContent({ emailId }: EmailContentProps) {
           </div>
           {/* Action Buttons (when not in reply/forward mode) */}
           <div className="flex gap-3 mt-8">
-            <Button onClick={() => setReplyMode("forward")} className="bg-gray-800 hover:bg-gray-700 text-white">
-              <Forward className="w-4 h-4 mr-2" />
-              Teruskan
-            </Button>
             <Button onClick={() => setReplyMode("reply")} className="bg-gray-800 hover:bg-gray-700 text-white">
               Balas
             </Button>
@@ -341,6 +529,17 @@ export function EmailContent({ emailId }: EmailContentProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Document Selection Panel */}
+      {showDocumentSelection && (
+        <ComposeDocumentSelection
+          selectedDocuments={selectedDocuments}
+          onSelectionChange={handleDocumentSelectionChange}
+          onClose={handleCloseDocumentSelection}
+          onAttach={handleAttachDocuments}
+          isAnimating={isDocumentAnimating}
+        />
       )}
     </div>
   )
