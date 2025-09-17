@@ -25,7 +25,7 @@ export function SimulationTab({
   return (
     <div className="flex flex-col flex-grow">
       <div className="flex justify-between items-start mb-2 py-2">
-        <h1 className="text-xl font-bold text-gray-800">Simulation</h1>
+        <h1 className="text-xl font-bold text-gray-800">Prework</h1>
         <div className="max-w-md">
           <div className="flex items-center space-x-3">
             <Checkbox
@@ -40,7 +40,7 @@ export function SimulationTab({
               htmlFor="reading-agreement"
               className="text-sm font-medium text-gray-700 cursor-pointer"
             >
-              I have read and understood the simulation material
+              I have read and understood the Assessment Prework material
             </label>
           </div>
         </div>

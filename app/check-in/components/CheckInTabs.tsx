@@ -25,7 +25,7 @@ export function CheckInTabs({
     },
     {
       id: "simulation" as TabType,
-      label: "Simulation",
+      label: "Prework",
       isCompleted: hasReadSimulation,
     },
     {
