@@ -30,6 +30,7 @@ interface ActiveMessengerChannelProps {
   clearAryaNotifications: () => void
   triggerMiaCompletionPhase2: () => void
   getMessagesForParticipant: (participant: Participant | null) => any[]
+  onUserTyping?: () => void
 }
 
 export function ActiveMessengerChannel({ 
@@ -43,7 +44,8 @@ export function ActiveMessengerChannel({
   clearMiaCompletionNotifications,
   clearAryaNotifications,
   triggerMiaCompletionPhase2,
-  getMessagesForParticipant
+  getMessagesForParticipant,
+  onUserTyping
 }: ActiveMessengerChannelProps) {
   const [isParticipantsPanelOpen, setIsParticipantsPanelOpen] = useState(false)
   const [messageInput, setMessageInput] = useState("")
@@ -243,10 +245,12 @@ export function ActiveMessengerChannel({
   // Get typing user info for display
   const getTypingUserInfo = () => {
     if (!typingUser) return { avatar: "MA", name: "Mia Avira", bgColor: "bg-purple-600" }
-    
+
     switch (typingUser) {
       case "Arya Prajida":
         return { avatar: "AP", name: "Arya Prajida", bgColor: "bg-blue-600" }
+      case "Jessica Wong":
+        return { avatar: "JW", name: "Jessica Wong", bgColor: "bg-pink-600" }
       case "Mia Avira":
       default:
         return { avatar: "MA", name: "Mia Avira", bgColor: "bg-purple-600" }
@@ -447,7 +451,7 @@ export function ActiveMessengerChannel({
                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                           </div>
-                          <span className="text-xs text-gray-500 ml-2">Mia sedang mengetik...</span>
+                          <span className="text-xs text-gray-500 ml-2">{typingUserInfo.name} sedang mengetik...</span>
                         </div>
                       </div>
                     </div>
@@ -471,6 +475,9 @@ export function ActiveMessengerChannel({
                 // Reset auto-fill state when user manually edits
                 if (isAutoFilled && e.target.value !== messageInput) {
                   setIsAutoFilled(false)
+                }
+                if (onUserTyping) {
+                  onUserTyping()
                 }
               }}
               onKeyPress={handleKeyPress}

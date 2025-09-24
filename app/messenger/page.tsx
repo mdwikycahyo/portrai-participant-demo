@@ -62,7 +62,83 @@ function MessengerPageContent() {
   const [onboardingTriggered, setOnboardingTriggered] = useState(false)
   const [presidentDirectorChannelAdded, setPresidentDirectorChannelAdded] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
+  const [localTypingUser, setLocalTypingUser] = useState<string | undefined>(undefined)
   const onboardingTimeoutsRef = useRef<NodeJS.Timeout[]>([])
+  // Jessica batching/debounce state per channel
+  const jessicaTimersRef = useRef<Record<string, { pending: string[]; mode: 'single' | 'inactivity' | null; timer: any; typingTimer: any }>>({})
+  const SINGLE_REPLY_WAIT_MS = 3000
+  const INACTIVITY_WAIT_MS = 5000
+  const TYPING_DELAY_MS = 2000
+
+  const ensureJessicaState = (channelId: string) => {
+    if (!jessicaTimersRef.current[channelId]) {
+      jessicaTimersRef.current[channelId] = { pending: [], mode: null, timer: null, typingTimer: null }
+    }
+    return jessicaTimersRef.current[channelId]
+  }
+
+  // Deterministic reply generator for Jessica (single-message case)
+  const generateJessicaReply = (text: string) => {
+    const lower = (text || '').toLowerCase()
+    if (/(halo|hai|hello|hi|pagi|siang|sore|malam)/i.test(lower)) {
+      return "Halo! Siap, saya ikutkan ke agenda. Ada hal khusus yang perlu saya lihat?"
+    }
+    if (/(review|tinjau|cek|periksa|lihat)/i.test(lower)) {
+      return "Siap, saya review dulu dokumennya dan update Anda hari ini."
+    }
+    if (/(meeting|rapat|jadwal|schedule|ketemu|sync)/i.test(lower)) {
+      return "Boleh. Kirimkan slot waktu Anda, saya sesuaikan kalender saya."
+    }
+    if (/(timeline|deadline|progress|status)/i.test(lower)) {
+      return "Saat ini on track. Saya kirim ringkasannya sore ini ya."
+    }
+    return "Noted. Saya tangani dan kabari segera."
+  }
+
+  const fireJessicaTimer = (channelId: string) => {
+    const state = ensureJessicaState(channelId)
+    const batch = [...state.pending]
+    state.pending = []
+    state.mode = null
+    state.timer = null
+
+    if (batch.length > 1) {
+      console.log(`Messages from User: ${batch.join('. ')}${batch.length ? '.' : ''}`)
+    }
+
+    // Show typing in UI only if user is viewing Jessica in this channel
+    const shouldShowTyping = selectedChannelId === channelId && selectedParticipant?.name === "Jessica Wong"
+    if (shouldShowTyping) {
+      setLocalTypingUser("Jessica Wong")
+      setIsTyping(true)
+    }
+
+    state.typingTimer = setTimeout(() => {
+      const content = batch.length > 1
+        ? "Terima kasih atas detail yang Anda berikan.  Saya sudah baca dan mengerti maksud Anda."
+        : generateJessicaReply(batch[0] || "")
+
+      const reply: Message = {
+        id: `msg-jessica-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+        senderName: "Jessica Wong",
+        senderAvatar: "JW",
+        content,
+        timestamp: new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        isUser: false,
+      }
+
+      setChannels((prev) => prev.map(ch => ch.id === channelId ? { ...ch, messages: [...ch.messages, reply] } : ch))
+      if (shouldShowTyping) {
+        setIsTyping(false)
+        setLocalTypingUser(undefined)
+      }
+      state.typingTimer = null
+    }, TYPING_DELAY_MS)
+  }
 
   // Handle call end redirect
   useEffect(() => {
@@ -495,6 +571,32 @@ function MessengerPageContent() {
         handleMiaAviraResponse(message.content, channelId)
       }, 100)
     }
+
+    // Jessica Wong batched auto-reply for her DM channel
+    if (channelId !== "onboarding-channel" && message.isUser) {
+      const currentChannel = channels.find(c => c.id === channelId)
+      const talkingToJessica = !!currentChannel?.participants.some(p => p.name === "Jessica Wong") && selectedParticipant?.name === "Jessica Wong"
+
+      if (talkingToJessica) {
+        const state = ensureJessicaState(channelId)
+        state.pending.push(message.content)
+
+        // If no timer, start single message window (3s)
+        if (!state.timer) {
+          state.mode = 'single'
+          state.timer = setTimeout(() => fireJessicaTimer(channelId), SINGLE_REPLY_WAIT_MS)
+        } else if (state.mode === 'single') {
+          // Switch to inactivity mode on second message
+          clearTimeout(state.timer)
+          state.mode = 'inactivity'
+          state.timer = setTimeout(() => fireJessicaTimer(channelId), INACTIVITY_WAIT_MS)
+        } else if (state.mode === 'inactivity') {
+          // Reset inactivity timer on each subsequent message
+          clearTimeout(state.timer)
+          state.timer = setTimeout(() => fireJessicaTimer(channelId), INACTIVITY_WAIT_MS)
+        }
+      }
+    }
   }
 
   // Handle Mia Avira response logic - FIXED: Immediate response trigger
@@ -795,6 +897,11 @@ function MessengerPageContent() {
   useEffect(() => {
     return () => {
       onboardingTimeoutsRef.current.forEach(timeout => clearTimeout(timeout))
+      // Clear Jessica timers
+      Object.values(jessicaTimersRef.current).forEach((state) => {
+        if (state.timer) clearTimeout(state.timer)
+        if (state.typingTimer) clearTimeout(state.typingTimer)
+      })
     }
   }, [])
 
@@ -847,18 +954,29 @@ function MessengerPageContent() {
                   </div>
                 </div>
               ) : (
-                <ActiveMessengerChannel 
+              <ActiveMessengerChannel 
                   channel={selectedChannel} 
                   selectedParticipant={selectedParticipant}
                   onSendMessage={handleSendMessage}
                   onOnboardingTrigger={handleOnboardingTrigger}
                   isTyping={isTyping}
-                  typingUser={messengerTypingState.typingUser}
+                  typingUser={localTypingUser ?? messengerTypingState.typingUser}
                   conversationStage={conversationStage}
                   clearMiaCompletionNotifications={clearMiaCompletionNotifications}
                   clearAryaNotifications={clearAryaNotifications}
                   triggerMiaCompletionPhase2={triggerMiaCompletionPhase2}
                   getMessagesForParticipant={getMessagesForParticipant}
+                  onUserTyping={() => {
+                    if (!selectedChannelId) return
+                    const currentChannel = channels.find(c => c.id === selectedChannelId)
+                    const talkingToJessica = !!currentChannel?.participants.some(p => p.name === "Jessica Wong") && selectedParticipant?.name === "Jessica Wong"
+                    if (!talkingToJessica) return
+                    const state = ensureJessicaState(selectedChannelId)
+                    if (state.mode === 'inactivity' && state.timer) {
+                      clearTimeout(state.timer)
+                      state.timer = setTimeout(() => fireJessicaTimer(selectedChannelId), INACTIVITY_WAIT_MS)
+                    }
+                  }}
                 />
               )}
             </div>
