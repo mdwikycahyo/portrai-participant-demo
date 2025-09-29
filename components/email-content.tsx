@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import {
   Eye,
   Download,
-  Forward,
+  Reply,
   X,
+  Send,
   Bold,
   Italic,
   Underline,
@@ -15,25 +16,89 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Send,
-  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
 import { useToast } from "@/hooks/use-toast"
-import { ComposeDocumentSelection } from "@/components/compose-document-selection"
-import { documentsData } from "@/lib/documents-data"
-import { useRouter } from "next/navigation"
-import { useDocuments } from "@/contexts/documents-context"
 
 interface EmailContentProps {
   emailId: string
 }
 
-// Type for tracking selected documents and their pages
-type SelectedDocumentsMap = Record<string, number[]> // fileId -> array of selected page numbers
+interface Reply {
+  id: string
+  content: string
+  subject: string
+  sender: string
+  email: string
+  recipientEmail: string
+  date: string
+  timestamp: number
+  isUserReply: boolean
+}
+
+interface Contact {
+  id: string
+  name: string
+  email: string
+  avatar: string
+  role: string
+  department: string
+}
+
+const contactsData: Contact[] = [
+  {
+    id: "dwiky-cahyo",
+    name: "Dwiky Cahyo",
+    email: "pm.corp@email.com",
+    avatar: "DC",
+    role: "Product Manager",
+    department: "Product"
+  },
+  {
+    id: "mia-avira",
+    name: "Mia Avira",
+    email: "mia.avira@company.com",
+    avatar: "MA",
+    role: "VP of Human Resources",
+    department: "HR"
+  },
+  {
+    id: "sarah-johnson",
+    name: "Sarah Johnson",
+    email: "sarah.johnson@company.com",
+    avatar: "SJ",
+    role: "President Director",
+    department: "Executive"
+  },
+  {
+    id: "manager",
+    name: "Your Manager",
+    email: "manager@company.com",
+    avatar: "MG",
+    role: "Manager",
+    department: "Your Team"
+  },
+  {
+    id: "hr-team",
+    name: "HR Team",
+    email: "hr-team@company.com",
+    avatar: "HR",
+    role: "HR Team",
+    department: "HR"
+  },
+  {
+    id: "it-support",
+    name: "IT Support",
+    email: "it-support@company.com",
+    avatar: "IT",
+    role: "IT Support",
+    department: "IT"
+  }
+]
+
 
 const emailData = {
   "first-mission": {
@@ -61,9 +126,9 @@ Amboja Technology`,
       "Profil Perusahaan Amboja.pdf",
     ],
   },
-  "ux-researcher": {
+  "product-manager": {
     sender: "Dwiky Cahyo",
-    email: "ux.researcher@email.com",
+    email: "pm.corp@email.com",
     subject: "Kick-off Discussion",
     date: "April 15, 2025",
     recipients: [
@@ -95,16 +160,13 @@ President Director`,
 }
 
 export function EmailContent({ emailId }: EmailContentProps) {
-  const router = useRouter()
-  const [replyMode, setReplyMode] = useState<"none" | "reply" | "forward">("none")
+  const [replyMode, setReplyMode] = useState<"none" | "reply">("none")
   const [replyContent, setReplyContent] = useState("")
-  const [forwardRecipient, setForwardRecipient] = useState("")
-  const [showContactSelection, setShowContactSelection] = useState(false)
-  const [showDocumentSelection, setShowDocumentSelection] = useState(false)
-  const [isDocumentAnimating, setIsDocumentAnimating] = useState(false)
-  const [selectedDocuments, setSelectedDocuments] = useState<SelectedDocumentsMap>({})
-  const [attachedDocuments, setAttachedDocuments] = useState<SelectedDocumentsMap>({})
-  const { savedDocuments } = useDocuments()
+  const [replySubject, setReplySubject] = useState("")
+  const [emailThreads, setEmailThreads] = useState<Record<string, Reply[]>>({})
+  const [selectedRecipient, setSelectedRecipient] = useState<string>("")
+  const [pendingRecipient, setPendingRecipient] = useState<string>("")
+  const [showContactSelector, setShowContactSelector] = useState(false)
   const { markEmailAsRead, addDownloadedDocument, triggerEmailReplyWithAttachment } = useAssessmentAssistant()
   const { toast } = useToast()
 
@@ -117,27 +179,67 @@ export function EmailContent({ emailId }: EmailContentProps) {
     }
   }, [emailId, markEmailAsRead])
 
+  // Initialize selected recipient when entering reply mode
+  useEffect(() => {
+    if (replyMode === "reply" && email && !selectedRecipient) {
+      // Default to Dwiky Cahyo (pm.corp@email.com)
+      setSelectedRecipient("pm.corp@email.com")
+    }
+  }, [replyMode, email, selectedRecipient])
 
+  // Initialize reply subject when entering reply mode
+  useEffect(() => {
+    if (replyMode === "reply" && email) {
+      // Smart RE: handling - don't add RE: if already present
+      const smartSubject = email.subject.startsWith('RE: ')
+        ? email.subject
+        : `RE: ${email.subject}`
+      setReplySubject(smartSubject)
+    }
+  }, [replyMode, email])
+
+  // Initialize pending recipient when opening contact selector
+  useEffect(() => {
+    if (showContactSelector) {
+      setPendingRecipient(selectedRecipient || "pm.corp@email.com")
+    }
+  }, [showContactSelector, selectedRecipient])
+
+  // Helper function to get contact details by email
+  const getContactByEmail = (email: string): Contact | null => {
+    return contactsData.find(contact => contact.email === email) || null
+  }
+
+  // Handle pending contact selection (radio button behavior)
+  const handlePendingContactSelect = (contact: Contact) => {
+    setPendingRecipient(contact.email)
+  }
+
+  // Confirm contact selection and close panel
+  const handleConfirmContactSelection = () => {
+    setSelectedRecipient(pendingRecipient)
+    setShowContactSelector(false)
+  }
 
   const handleDownload = (attachmentName: string) => {
     if (emailId === "first-mission" && attachmentName === "Profil Perusahaan Amboja.pdf") {
       const document = {
         id: "profil-perusahaan-amboja",
         name: "Profil Perusahaan Amboja.pdf",
-        date: new Date().toLocaleDateString("id-ID", { 
-          day: "numeric", 
-          month: "short", 
-          year: "numeric" 
+        date: new Date().toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          year: "numeric"
         }),
         owner: { name: "Mia Avira", avatar: "MA" },
         folderId: null,
         content: {
           title: "Profil Perusahaan Amboja",
           author: "Mia Avira",
-          lastUpdate: new Date().toLocaleDateString("id-ID", { 
-            day: "numeric", 
-            month: "long", 
-            year: "numeric" 
+          lastUpdate: new Date().toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric"
           }),
           pages: 8,
           sections: [
@@ -160,9 +262,9 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
           ],
         },
       }
-      
+
       addDownloadedDocument(document)
-      
+
       // Simulate download
       toast({
         title: "Dokumen Berhasil Didownload",
@@ -171,63 +273,6 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
     }
   }
 
-  // Document attachment handlers
-  const handleOpenDocumentSelection = () => {
-    setShowDocumentSelection(true)
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setIsDocumentAnimating(true)
-      })
-    })
-  }
-
-  const handleDocumentSelectionChange = (newSelection: SelectedDocumentsMap) => {
-    setSelectedDocuments(newSelection)
-  }
-
-  const handleAttachDocuments = () => {
-    // Move selected documents to attached documents
-    setAttachedDocuments((prev) => ({ ...prev, ...selectedDocuments }))
-    // Clear selection and close panel
-    setSelectedDocuments({})
-    setIsDocumentAnimating(false)
-    setTimeout(() => setShowDocumentSelection(false), 300)
-  }
-
-  const handleCloseDocumentSelection = () => {
-    setIsDocumentAnimating(false)
-    setTimeout(() => setShowDocumentSelection(false), 300)
-  }
-
-  const handleRemoveAttachedDocument = (fileId: string) => {
-    setAttachedDocuments((prev) => {
-      const newAttached = { ...prev }
-      delete newAttached[fileId]
-      return newAttached
-    })
-  }
-
-  // Get file details for attached documents
-  const getFileDetails = (fileId: string) => {
-    // Check in folders first
-    for (const folder of documentsData.folders) {
-      const file = folder.files.find((f) => f.id === fileId)
-      if (file) return file
-    }
-    // Check in root files
-    const rootFile = documentsData.rootFiles.find((f) => f.id === fileId)
-    if (rootFile) return rootFile
-
-    // Check in saved documents (already converted to DocumentFile format)
-    const savedDoc = savedDocuments.find((doc) => doc.id === fileId)
-    if (savedDoc) {
-      return savedDoc
-    }
-
-    return null
-  }
-
-  // Handle send email reply
   const handleSendReply = () => {
     if (!replyContent.trim()) {
       toast({
@@ -238,28 +283,61 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
       return
     }
 
-    // Check if this is a reply to Mia's email with attachments
+    if (!replySubject.trim()) {
+      toast({
+        title: "Subjek Kosong",
+        description: "Harap isi subjek email!",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Create new reply object
+    const newReply: Reply = {
+      id: `reply-${Date.now()}`,
+      content: replyContent,
+      subject: replySubject,
+      sender: "You",
+      email: "dwiky.cahyo@company.com",
+      recipientEmail: selectedRecipient || email.email,
+      date: new Date().toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      timestamp: Date.now(),
+      isUserReply: true
+    }
+
+    // Add reply to thread
+    setEmailThreads(prev => ({
+      ...prev,
+      [emailId]: [...(prev[emailId] || []), newReply]
+    }))
+
+    // Check if this is a reply to Mia's email
     const isMiaEmail = emailId === "first-mission"
-    const hasAttachments = Object.keys(attachedDocuments).length > 0
-    
-    if (isMiaEmail && hasAttachments) {
-      // This is a reply to Mia's email with attachments - trigger the completion flow
+
+    if (isMiaEmail) {
+      // This is a reply to Mia's email - trigger the completion flow
       triggerEmailReplyWithAttachment()
     }
-    
+
     // Simulate email sending
     toast({
       title: "Balasan Terkirim",
       description: "Email balasan berhasil dikirim!",
     })
-    
+
     // Reset reply mode and content
     setReplyMode("none")
     setReplyContent("")
-    setAttachedDocuments({})
-    
-    // Navigate back to email list
-    router.push("/email")
+    setReplySubject("")
+    setSelectedRecipient("")
+
+    // Stay on email view to show the thread (removed navigation)
   }
 
   if (!email) return null
@@ -285,23 +363,37 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
               </div>
             </div>
           </div>
-          <span className="text-sm text-gray-500">{email.date}</span>
+          <div className="flex flex-col items-end gap-2">
+            <span className="text-sm text-gray-500">{email.date}</span>
+            <Button
+              onClick={() => setReplyMode("reply")}
+              size="sm"
+              className="bg-gray-800 hover:bg-gray-700 text-white"
+            >
+              <Reply className="w-4 h-4 mr-2" />
+              Balas
+            </Button>
+          </div>
         </div>
         {/* Recipients */}
         <div className="text-sm text-gray-600">
           <span className="font-medium">Kepada:</span> {email.recipients.join(", ")}
         </div>
       </div>
-      {/* Reply/Forward Interface */}
-      {replyMode !== "none" && (
+
+      {/* Reply Interface */}
+      {replyMode === "reply" && (
         <div className="border-t border-gray-200 pt-6 mb-6">
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-gray-50 rounded-lg p-6 mx-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {replyMode === "reply" ? "Balas" : "Teruskan Pesan"}
-              </h3>
-              <Button variant="ghost" onClick={() => setReplyMode("none")} className="p-1">
+              <h3 className="text-lg font-semibold text-gray-900">Balas</h3>
+              <Button variant="ghost" onClick={() => {
+                setReplyMode("none")
+                setReplyContent("")
+                setReplySubject("")
+                setSelectedRecipient("")
+              }} className="p-1">
                 <X className="w-4 h-4" />
               </Button>
             </div>
@@ -310,40 +402,29 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
             <div className="flex items-center gap-3 mb-4">
               <label className="text-sm font-medium text-gray-700 w-12">Kepada:</label>
               <div className="flex-1 flex items-center gap-2">
-                {replyMode === "reply" ? (
-                  <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm">
-                    Dwiky.wick@email.com
-                    <button onClick={() => setReplyMode("none")} className="ml-1">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    {forwardRecipient && (
-                      <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm">
-                        {forwardRecipient}
-                        <button onClick={() => setForwardRecipient("")} className="ml-1">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowContactSelection(!showContactSelection)}
-                      className="ml-auto"
-                    >
-                      Tambah Kontak
-                    </Button>
-                  </>
-                )}
+                <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm">
+                  {selectedRecipient || email.email}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowContactSelector(true)}
+                  className="text-sm"
+                >
+                  Change Recipient
+                </Button>
               </div>
             </div>
 
             {/* Subject */}
             <div className="flex items-center gap-3 mb-4">
               <label className="text-sm font-medium text-gray-700 w-12">Subjek:</label>
-              <Input value={`${replyMode === "reply" ? "RE:" : "FW:"} ${email.subject}`} className="flex-1" readOnly />
+              <Input
+                value={replySubject}
+                onChange={(e) => setReplySubject(e.target.value)}
+                className="flex-1"
+                placeholder="Enter email subject"
+              />
             </div>
 
             {/* Rich Text Toolbar */}
@@ -380,39 +461,6 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
               </Button>
             </div>
 
-            {/* Attached Documents List */}
-            {Object.keys(attachedDocuments).length > 0 && (
-              <div className="space-y-2 mb-4">
-                <h4 className="text-sm font-medium text-gray-700">Dokumen Terlampir:</h4>
-                <div className="space-y-2">
-                  {Object.entries(attachedDocuments).map(([fileId, pages]) => {
-                    const file = getFileDetails(fileId)
-                    if (!file) return null
-
-                    return (
-                      <div key={fileId} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <FileText className="w-4 h-4 text-gray-600" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{file.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {pages.length} halaman terpilih dari {file.content.pages || 0}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveAttachedDocument(fileId)}
-                          className="p-1"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* Message Area */}
             <Textarea
               value={replyContent}
@@ -423,14 +471,14 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
 
             {/* Action Buttons */}
             <div className="flex items-center justify-between">
-              <Button variant="outline" onClick={handleOpenDocumentSelection}>
+              <Button variant="outline" disabled>
                 Lampirkan Dokumen
               </Button>
               <div className="flex gap-3">
                 <Button variant="outline" disabled>
                   Simpan sebagai Draft
                 </Button>
-                <Button 
+                <Button
                   className="bg-gray-800 hover:bg-gray-700 text-white"
                   onClick={handleSendReply}
                 >
@@ -442,7 +490,8 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
           </div>
         </div>
       )}
-      {/* Content - Only show when not in reply/forward mode */}
+
+      {/* Content - Only show when not in reply mode */}
       {replyMode === "none" && (
         <div className="p-4">
           {" "}
@@ -479,29 +528,61 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
               ))}
             </div>
           </div>
-          {/* Action Buttons (when not in reply/forward mode) */}
-          <div className="flex gap-3 mt-8">
-            <Button onClick={() => setReplyMode("reply")} className="bg-gray-800 hover:bg-gray-700 text-white">
-              Balas
-            </Button>
-          </div>
+
+          {/* Email Replies - Clean Corporate Style */}
+          {emailThreads[emailId] && emailThreads[emailId].length > 0 && (
+            <div className="mt-8 space-y-6">
+              <h3 className="font-medium text-gray-900 text-lg border-b border-gray-200 pb-2">
+                Replies ({emailThreads[emailId].length})
+              </h3>
+              {emailThreads[emailId].map((reply) => (
+                <div key={reply.id} className="border border-gray-200 rounded-lg bg-white shadow-sm">
+                  <div className="p-4">
+                    {/* Clean header with sender info */}
+                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-600 text-white text-sm font-medium flex items-center justify-center">
+                          You
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{reply.sender}</p>
+                          <p className="text-sm text-gray-500">{reply.date}</p>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Content */}
+                    <div className="space-y-2">
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">To:</span> {reply.recipientEmail}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">Subject:</span> {reply.subject}
+                      </div>
+                    </div>
+                    <div className="mt-4 text-gray-800 leading-relaxed">
+                      {reply.content}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
-      {/* Original Email Content (when replying/forwarding) */}
-      {replyMode !== "none" && (
+
+      {/* Original Email Content (when replying) */}
+      {replyMode === "reply" && (
         <div className="border-t border-gray-200 pt-6 mb-6">
-          <div className="bg-gray-100 rounded-lg p-6">
-            <div className="text-sm text-gray-600 mb-4">
-              {replyMode === "reply" ? "Pesan Asli:" : "Pesan yang Diteruskan:"}
-            </div>
+          <div className="bg-gray-100 rounded-lg p-6 mx-4">
+            <div className="text-sm text-gray-600 mb-4">Pesan Asli:</div>
             <div className="bg-white rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
-                  UR
+                  {emailId === "first-mission" ? "MA" : "DC"}
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">M.Dwiky Wicak</p>
-                  <p className="text-sm text-gray-600">&lt;Dwiky.wick@email.com&gt;</p>
+                  <p className="font-medium text-gray-900">{email.sender}</p>
+                  <p className="text-sm text-gray-600">&lt;{email.email}&gt;</p>
                 </div>
                 <span className="text-sm text-gray-500 ml-auto">{email.date}</span>
               </div>
@@ -510,8 +591,8 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
               </div>
               <div className="whitespace-pre-line text-gray-700 leading-relaxed mb-4">{email.content}</div>
 
-              {/* Attachments in forwarded message */}
-              {replyMode === "forward" && (
+              {/* Attachments in original message */}
+              {email.attachments.length > 0 && (
                 <div className="border-t border-gray-200 pt-4">
                   <h4 className="font-medium text-gray-900 mb-3">Lampiran</h4>
                   <div className="space-y-2">
@@ -531,15 +612,86 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
         </div>
       )}
 
-      {/* Document Selection Panel */}
-      {showDocumentSelection && (
-        <ComposeDocumentSelection
-          selectedDocuments={selectedDocuments}
-          onSelectionChange={handleDocumentSelectionChange}
-          onClose={handleCloseDocumentSelection}
-          onAttach={handleAttachDocuments}
-          isAnimating={isDocumentAnimating}
-        />
+      {/* Contact Selector Modal */}
+      {showContactSelector && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-25 z-40"
+            onClick={() => setShowContactSelector(false)}
+          />
+          {/* Modal */}
+          <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-lg z-50 border-l border-gray-200">
+            <div className="h-full flex flex-col">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Change Recipient</h3>
+                  <Button variant="ghost" onClick={() => setShowContactSelector(false)} className="p-1">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">Select who should receive this reply</p>
+              </div>
+
+              {/* Contact List */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-3">
+                  {contactsData.map((contact) => (
+                    <div
+                      key={contact.id}
+                      onClick={() => handlePendingContactSelect(contact)}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-gray-50 ${
+                        pendingRecipient === contact.email
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold bg-purple-600 text-sm">
+                          {contact.avatar}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{contact.name}</p>
+                          <p className="text-sm text-gray-600 truncate">{contact.role}</p>
+                          <p className="text-xs text-gray-500 truncate">{contact.email}</p>
+                        </div>
+                        {pendingRecipient === contact.email && (
+                          <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          </div>
+                        )}
+                        {selectedRecipient === contact.email && (
+                          <span className="text-xs text-blue-600 font-medium">CURRENT</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-4 border-t border-gray-200">
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowContactSelector(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleConfirmContactSelection}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={!pendingRecipient}
+                  >
+                    Select
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

@@ -170,39 +170,12 @@ const AssessmentAssistantContext = createContext<AssessmentAssistantContextType 
 // Default emails that are always present
 const defaultEmails: Email[] = [
   {
-    id: "ux-researcher",
+    id: "product-manager",
     sender: "Dwiky Cahyo",
     avatar: "DC",
     subject: "Kick-off Discussion",
     preview: "Kita tengah memasuki fase penting dalam perjalanan Amboja sebagai perusahaan teknologi yang berbasis pada keber...",
     time: "2:00 PM",
-    hasAttachment: true,
-  },
-  {
-    id: "ui-developer",
-    sender: "UI Developer",
-    avatar: "UD",
-    subject: "Launch Planning Session",
-    preview: "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    time: "4:15 PM",
-    hasAttachment: true,
-  },
-  {
-    id: "product-manager",
-    sender: "Product Manager",
-    avatar: "PM",
-    subject: "Project Commencement Brief...",
-    preview: "Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; In egestas orci ac quam...",
-    time: "11:45 AM",
-    hasAttachment: true,
-  },
-  {
-    id: "frontend-engineer",
-    sender: "Front-end Engineer",
-    avatar: "FE",
-    subject: "Initial Project Overview",
-    preview: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, tot...",
-    time: "9:30 AM",
     hasAttachment: true,
   },
 ]

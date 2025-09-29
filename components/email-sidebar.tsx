@@ -1,7 +1,6 @@
 "use client"
 
-import { Search, Edit, Inbox, Send, FileEdit } from "lucide-react"
-import { useRouter } from 'next/navigation';
+import { Search, Inbox, FileEdit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
@@ -14,24 +13,16 @@ interface EmailSidebarProps {
 
 const tabs = [
   { id: "inbox", label: "Masuk", icon: Inbox },
-  { id: "sent", label: "Terkirim", icon: Send },
   { id: "draft", label: "Draft", icon: FileEdit },
 ]
 
 export function EmailSidebar({ activeTab, onTabChange }: EmailSidebarProps) {
-  const router = useRouter();
   const { onboardingEmailSent, emailRead } = useAssessmentAssistant();
 
   return (
     <div className="w-80 bg-white border-r border-gray-200 h-full">
       <div className="p-4 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Email</h1>
-
-        {/* Compose Button */}
-        <Button onClick={() => router.push('/email/compose')} className="w-full bg-gray-800 hover:bg-gray-700 text-white mb-4">
-            <Edit className="w-4 h-4 mr-2" />
-            Tulis
-        </Button>
 
         {/* Search */}
         <div className="relative">

@@ -10,7 +10,6 @@ interface EmailListProps {
 }
 
 const emails = {
-  sent: [],
   draft: [],
 }
 
@@ -25,7 +24,7 @@ export function EmailList({ selectedEmail, onEmailSelect, activeTab }: EmailList
   if (currentEmails.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-500">
-        <p>Tidak ada email di {activeTab === "inbox" ? "masuk" : activeTab === "sent" ? "terkirim" : "draft"}</p>
+        <p>Tidak ada email di {activeTab === "inbox" ? "masuk" : "draft"}</p>
       </div>
     )
   }
