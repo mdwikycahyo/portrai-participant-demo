@@ -163,6 +163,7 @@ interface AssessmentAssistantContextType {
   triggerAryaPhase2: () => void
   setTypingState: (state: { isTyping: boolean; typingUser?: string }) => void
   setDocumentEditorState: (page: string, title: string) => void
+  simulateIncomingEmail: (opts?: Partial<Email> & { id?: string }) => void
 }
 
 const AssessmentAssistantContext = createContext<AssessmentAssistantContextType | undefined>(undefined)
@@ -468,6 +469,22 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     
     // Add Mia's email to the beginning of the inbox
     setInboxEmails(prev => [miaEmail, ...prev])
+  }, [])
+
+  // Simulate an incoming email using local state only
+  const simulateIncomingEmail = useCallback((opts?: Partial<Email> & { id?: string }) => {
+    const id = opts?.id ?? `dummy-${Date.now()}`
+    const sender = opts?.sender ?? 'HR Team'
+    const avatar = opts?.avatar ?? 'HR'
+    const subject = opts?.subject ?? 'Follow-up Onboarding Information'
+    const preview = opts?.preview ?? 'Berikut informasi lanjutan terkait proses onboarding Anda di Amboja.'
+    const time = opts?.time ?? new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    const hasAttachment = opts?.hasAttachment ?? false
+
+    const email: Email = { id, sender, avatar, subject, preview, time, hasAttachment }
+
+    // Add to top of inbox
+    setInboxEmails(prev => [email, ...prev])
   }, [])
 
   const markMiaAsInteracted = useCallback(() => {
@@ -972,6 +989,7 @@ export function AssessmentAssistantProvider({ children }: { children: ReactNode 
     triggerAryaPhase2,
     setTypingState,
     setDocumentEditorState,
+    simulateIncomingEmail,
   }
 
   return (

@@ -132,28 +132,20 @@ Amboja Technology`,
     subject: "Kick-off Discussion",
     date: "April 15, 2025",
     recipients: [
-      "me@email.com",
-      "Douglas.Terry16@hotmail.com",
-      "Gretchen_Christiansen25@yahoo.com",
-      "Michael_Weissnat@gmail.com",
+      "douglase@hotmail.com",
+      "michael@gmail.com",
     ],
     content: `Dear Participant,
 
-Kita tengah memasuki fase penting dalam perjalanan Amboja sebagai perusahaan teknologi yang berbasis pada keberlanjutan dan inovasi. Setelah bertahun-tahun berfokus pada perluasan pasar dan efisiensi operasional, kini saatnya kita memperkuat fondasi manusia di balik semua pencapaian itu.
-
-Saya percaya bahwa keberhasilan jangka panjang hanya bisa dicapai jika kita mampu membangun budaya kerja yang kolaboratif, sehat secara psikologis, dan menyenangkan. Keseimbangan antara target dan keterlibatan karyawan adalah kunci untuk menjaga performa tetap stabil di tengah tekanan.
-
-Karena itu, saya ingin mengajak seluruh pimpinan untuk memberikan ruang bagi inisiatif yang mampu memperkuat keterikatan dan kebersamaan tim. Kegiatan engagement internal bukan sekadar acara hiburan, melainkan investasi terhadap ketahanan organisasi kita di masa depan.
+Saya ingin mengajak seluruh pimpinan untuk memberikan ruang bagi inisiatif yang mampu memperkuat keterikatan dan kebersamaan tim. Kegiatan engagement internal bukan sekadar acara hiburan, melainkan investasi terhadap ketahanan organisasi kita di masa depan.
 
 Terima kasih atas dedikasi dan partisipasi Anda.
 
 Best regards,
 
-Sarah Johnson
-President Director`,
+Dwiky Cahyo
+Product Manager`,
     attachments: [
-      "Dokumen Referensi Kegiatan Engagement",
-      "Dokumen Referensi Kegiatan Engagement",
       "Dokumen Referensi Kegiatan Engagement",
     ],
   },
@@ -167,10 +159,23 @@ export function EmailContent({ emailId }: EmailContentProps) {
   const [selectedRecipient, setSelectedRecipient] = useState<string>("")
   const [pendingRecipient, setPendingRecipient] = useState<string>("")
   const [showContactSelector, setShowContactSelector] = useState(false)
-  const { markEmailAsRead, addDownloadedDocument, triggerEmailReplyWithAttachment } = useAssessmentAssistant()
+  const { markEmailAsRead, addDownloadedDocument, triggerEmailReplyWithAttachment, simulateIncomingEmail, inboxEmails } = useAssessmentAssistant()
   const { toast } = useToast()
 
-  const email = emailData[emailId as keyof typeof emailData]
+  // Prefer static email data; if not present, derive a minimal email object from inbox metadata
+  const staticEmail = emailData[emailId as keyof typeof emailData]
+  const inboxMeta = inboxEmails.find((e) => e.id === emailId)
+  const email = staticEmail || (inboxMeta
+    ? {
+        sender: inboxMeta.sender,
+        email: `${inboxMeta.sender.toLowerCase().replace(/\s+/g, ".")}@company.com`,
+        subject: inboxMeta.subject,
+        date: inboxMeta.time,
+        recipients: ["dwiky.cahyo@company.com"],
+        content: inboxMeta.preview,
+        attachments: [] as string[],
+      }
+    : undefined as any)
 
   // Mark email as read when first-mission email is opened
   useEffect(() => {
@@ -331,6 +336,17 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
       description: "Email balasan berhasil dikirim!",
     })
 
+    // After user sends, simulate a new incoming dummy email (local state only)
+    setTimeout(() => {
+      simulateIncomingEmail({
+        sender: "Mia Avira",
+        avatar: "MA",
+        subject: "Kami menerima balasan email Anda!",
+        preview: "Baik, email dan dokumen Anda sudah kami terima. Selamat!",
+        hasAttachment: false,
+      })
+    }, 1200)
+
     // Reset reply mode and content
     setReplyMode("none")
     setReplyContent("")
@@ -343,7 +359,7 @@ Kami juga berkomitmen untuk terus mengembangkan kemampuan karyawan melalui progr
   if (!email) return null
 
   return (
-    <div className="flex-1 bg-white overflow-y-auto border-l border-gray-200">
+    <div className="flex-1 bg-white overflow-y-auto">
       {" "}
       {/* Changed background to gray-50 and added padding */}
       {/* Header Card */}

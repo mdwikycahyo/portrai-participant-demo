@@ -30,7 +30,7 @@ export function EmailList({ selectedEmail, onEmailSelect, activeTab }: EmailList
   }
 
   return (
-    <div className="flex-1 bg-gray-50">
+    <div className="flex-1 bg-white border-r border-gray-200">
       {currentEmails.map((email) => (
         <div
           key={email.id}
