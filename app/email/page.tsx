@@ -27,7 +27,7 @@ export default function EmailPage() {
 
         <div className="flex-1 flex">
           <EmailList selectedEmail={selectedEmail} onEmailSelect={handleEmailSelect} activeTab={activeTab} />
-          <div className="flex-1 bg-white">{selectedEmail ? <EmailContent emailId={selectedEmail} /> : <EmailEmptyState />}</div>
+          <div data-onboarding="email:content" className="flex-1 bg-white">{selectedEmail ? <EmailContent emailId={selectedEmail} /> : <EmailEmptyState />}</div>
         </div>
       </div>
     </Layout>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AssessmentAssistantProvider } from '@/contexts/assessment-assistant-context'
+import { OnboardingTourProvider } from '@/components/onboarding-tour'
 import { DocumentsProvider } from '@/contexts/documents-context'
 import { Toaster } from '@/components/ui/toaster'
 
@@ -23,8 +24,10 @@ export default function RootLayout({
       <body>
         <AssessmentAssistantProvider>
           <DocumentsProvider>
-            {children}
-            <Toaster />
+            <OnboardingTourProvider>
+              {children}
+              <Toaster />
+            </OnboardingTourProvider>
           </DocumentsProvider>
         </AssessmentAssistantProvider>
       </body>

@@ -28,7 +28,7 @@ export function MessengerChannelList({
   } = useAssessmentAssistant()
   
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <div data-onboarding="messenger:channel-list" className="w-80 bg-white border-r border-gray-200 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <h1 className="text-2xl font-semibold text-gray-900 mb-4">Messenger</h1>
@@ -40,9 +40,11 @@ export function MessengerChannelList({
       {/* Channel List */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-2">
-          {channels.map((channel) => (
+          {channels.map((channel, idx) => (
             <div
               key={channel.id}
+              data-onboarding="messenger:channel-item"
+              data-index={idx}
               onClick={() => onChannelSelect(channel.id)}
               className={`relative flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                 selectedChannelId === channel.id ? "bg-gray-100 border border-gray-300" : "hover:bg-gray-50"

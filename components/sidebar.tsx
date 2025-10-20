@@ -48,7 +48,7 @@ export function Sidebar() {
 
   return (
     <TooltipProvider>
-      <div className="fixed left-1 top-1 bottom-1 h-[calc(100%-0.3rem*2)] w-20 bg-gray-800 flex flex-col items-center py-6 z-50 rounded-[12px]">
+      <div data-onboarding="nav:sidebar" className="fixed left-1 top-1 bottom-1 h-[calc(100%-0.3rem*2)] w-20 bg-gray-800 flex flex-col items-center py-6 z-50 rounded-[12px]">
         {/* Logo */}
         <div className="mb-8">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center p-2">

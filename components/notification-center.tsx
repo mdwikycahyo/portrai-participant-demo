@@ -35,7 +35,7 @@ export function NotificationCenter() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div data-onboarding="home:notification-center" className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900">Pusat Notifikasi</h2>
 
       <div className="space-y-4">

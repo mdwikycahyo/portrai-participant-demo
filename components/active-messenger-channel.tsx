@@ -323,6 +323,7 @@ export function ActiveMessengerChannel({
 
         {/* Messages */}
         <div 
+          data-onboarding="messenger:chat-pane"
           ref={messagesContainerRef}
           className="flex-1 p-4 bg-gray-50 overflow-y-auto"
           style={{ scrollBehavior: 'smooth' }}
@@ -466,7 +467,7 @@ export function ActiveMessengerChannel({
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-gray-200 bg-white">
+        <div data-onboarding="messenger:composer" className="p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center gap-2">
             <Input
               value={messageInput}

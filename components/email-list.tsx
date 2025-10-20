@@ -30,10 +30,12 @@ export function EmailList({ selectedEmail, onEmailSelect, activeTab }: EmailList
   }
 
   return (
-    <div className="flex-1 bg-white border-r border-gray-200">
+    <div data-onboarding="email:list" className="flex-1 bg-white border-r border-gray-200">
       {currentEmails.map((email) => (
         <div
           key={email.id}
+          data-onboarding="email:item"
+          data-id={email.id}
           onClick={() => onEmailSelect(email.id)}
           className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-white transition-colors ${
             selectedEmail === email.id ? "bg-white border-l-4 border-l-blue-500" : ""

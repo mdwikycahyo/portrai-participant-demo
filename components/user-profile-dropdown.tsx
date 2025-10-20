@@ -11,6 +11,7 @@ import {
 import { Switch } from "@/components/ui/switch" // Import Switch
 import { Label } from "@/components/ui/label" // Import Label
 import { useAssessmentAssistant } from "@/contexts/assessment-assistant-context"
+import { useOnboardingTour } from "@/components/onboarding-tour"
 
 interface UserProfileDropdownProps {
   showWorkHourBanner: boolean
@@ -27,6 +28,7 @@ export function UserProfileDropdown({
 }: UserProfileDropdownProps) {
   const router = useRouter()
   const { startTutorial } = useAssessmentAssistant()
+  const { startHomeTour } = useOnboardingTour()
 
   const handleLogout = () => {
     router.push("/")
@@ -38,6 +40,10 @@ export function UserProfileDropdown({
 
   const handleStartTutorial = () => {
     startTutorial()
+  }
+
+  const handleStartProductTour = () => {
+    startHomeTour()
   }
 
   return (
@@ -92,6 +98,11 @@ export function UserProfileDropdown({
         <DropdownMenuItem onClick={handleStartTutorial} className="cursor-pointer">
           <Play className="w-4 h-4 mr-2" />
           Interactive Tutorial
+        </DropdownMenuItem>
+         {/* Start Product Tour */}
+        <DropdownMenuItem onClick={handleStartProductTour} className="cursor-pointer">
+          <Play className="w-4 h-4 mr-2" />
+          Product Tour
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleCheckout} className="cursor-pointer">

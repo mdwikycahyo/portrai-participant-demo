@@ -43,7 +43,7 @@ export function DocumentsList() {
     <div className="px-6 pb-6">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-4xl font-bold text-gray-900">Documents</h1>
-        <Link href="/documents/editor">
+        <Link href="/documents/editor" data-onboarding="documents:create">
           <Button className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Create Document
@@ -52,7 +52,7 @@ export function DocumentsList() {
       </div>
 
       {/* Folders Section */}
-      <div className="mb-12">
+      <div className="mb-12" data-onboarding="documents:folders">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Folder</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {documentsData.folders.map((folder) => (
@@ -73,7 +73,7 @@ export function DocumentsList() {
       </div>
 
       {/* All Files Section */}
-      <div>
+      <div data-onboarding="documents:files">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Semua File</h2>
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="grid grid-cols-5 gap-4 p-4 bg-gray-50 border-b border-gray-200 font-medium text-gray-700">

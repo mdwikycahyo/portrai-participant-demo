@@ -47,13 +47,15 @@ export function ParticipantSelection({ channel, selectedParticipant, onSelectPar
   }
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <div data-onboarding="messenger:participant-selection" className="w-80 bg-white border-r border-gray-200 flex flex-col">
       {/* Participants List */}
       <div className="flex-1 p-4 overflow-y-auto">
         <div className="space-y-4">
           {filteredParticipants.map((participant, index) => (
             <div
               key={index}
+              data-onboarding="messenger:participant-item"
+              data-name={participant.name}
               onClick={() => onSelectParticipant(participant)}
               className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                 selectedParticipant?.name === participant.name

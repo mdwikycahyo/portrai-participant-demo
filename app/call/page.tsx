@@ -20,7 +20,7 @@ export default function CallPage() {
 
             {/* Content Area */}
             <div className="flex-1 bg-white">
-              <div className="p-6">
+              <div className="p-6" data-onboarding="call:history">
                 <div className="space-y-4">
                   {callHistoryData.map((call) => (
                     <div
