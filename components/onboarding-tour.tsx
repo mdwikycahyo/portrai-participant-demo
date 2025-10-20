@@ -435,6 +435,7 @@ export function OnboardingTourProvider({ children }: { children: React.ReactNode
 
   const current = isRunning ? steps[stepIndex] : undefined
   const rect = useBoundingRect(current?.selector)
+  const isFirstStepOnPage = isRunning && stepIndex === 0
 
   // Run step-specific side effects when step changes
   useEffect(() => {
@@ -452,6 +453,8 @@ export function OnboardingTourProvider({ children }: { children: React.ReactNode
       lastElRef.current = null
     }
     if (!isRunning || !current?.selector) return
+    // For the first step on each page, keep the card centered and avoid adding ring
+    if (stepIndex === 0) return
     if (current.id === "navigation") return
 
     let raf = 0
@@ -473,21 +476,21 @@ export function OnboardingTourProvider({ children }: { children: React.ReactNode
         lastElRef.current = null
       }
     }
-  }, [isRunning, current?.selector, current?.id])
+  }, [isRunning, current?.selector, current?.id, stepIndex])
 
   return (
     <OnboardingContext.Provider value={value}>
       {children}
       {isRunning && current && (
         <>
-          <OverlayHighlight rect={rect} />
+          <OverlayHighlight rect={isFirstStepOnPage ? null : rect} />
           {(() => {
             const isLastStep = stepIndex === steps.length - 1
             // Only treat as final when we are on Documents page's last step
             const treatAsLast = pathname === "/documents" && isLastStep
             return (
               <StepCard
-                rect={rect}
+                rect={isFirstStepOnPage ? null : rect}
                 step={current}
                 onNext={next}
                 onPrev={prev}
