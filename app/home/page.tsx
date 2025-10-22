@@ -1,10 +1,12 @@
 import { Layout } from "@/components/layout"
+import { AutoStartHomeTour } from "@/components/auto-start-home-tour"
 import { ExecutiveMessage } from "@/components/executive-message"
 import { NotificationCenter } from "@/components/notification-center"
 
 export default function HomePage() {
   return (
     <Layout>
+        <AutoStartHomeTour />
         <div className="px-6 pb-6">
           {/* Welcome Section */}
           <div className="mb-8">
